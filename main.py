@@ -2,7 +2,7 @@ import os
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QWidget
 
 # ======================================================================
 
@@ -36,23 +36,36 @@ def get_img_paths(dir, extensions=''):
     return filenames
 
 
-def window():
-    app = QApplication(sys.argv)
-    win = QMainWindow()
+class App(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.title = 'PyQt5 - Annotation tool'
+        self.left = 200
+        self.top = 200
+        self.width = 960
+        self.height = 540
+        self.initUI()
 
-    win.setGeometry(250, 200, 940, 680)
-    win.setWindowTitle("Annotation tool")
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
 
-    button = QtWidgets.QPushButton(win)
-    button.setText("Hello World!")
-    button.move(50, 20)
+        # Create button
+        button = QtWidgets.QPushButton(self)
+        button.setText("Hello World!")
+        button.move(50, 20)
 
-    win.show()
-    sys.exit(app.exec_())
+        # apply styles
+        sshFile = "./styles/button.qss"
+        with open(sshFile, "r") as fh:
+            self.setStyleSheet(fh.read())
 
 
 if __name__ == '__main__':
     # get paths to images
     img_paths = get_img_paths(input_folder, file_extensions)
 
-    window()
+    app = QApplication(sys.argv)
+    ex = App()
+    ex.show()
+    sys.exit(app.exec_())
