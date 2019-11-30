@@ -8,4 +8,9 @@ QPushButton {
     height: 40px
 }
 
+QPushButton#setImageButton {
+background-color: black;
+}
+
+
 QPushButton:pressed { background-color: lime }

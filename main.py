@@ -2,7 +2,9 @@ import os
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtGui import QIcon, QPixmap
 
 # ======================================================================
 
@@ -60,6 +62,7 @@ class App(QWidget):
         # Initialize image variables
         self.image_raw = None
         self.image = None
+        self.image_box = QLabel(self)
 
         # init UI
         self.initUI()
@@ -69,6 +72,9 @@ class App(QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.initButtons()
+
+        # show image
+        self.set_image(self.img_paths[0])
 
         # apply styles
         sshFile = "./styles/button.qss"
@@ -82,11 +88,13 @@ class App(QWidget):
         prev_im_btn.setText("Prev")
         prev_im_btn.move(self.width - 190, 20)
         prev_im_btn.clicked.connect(self.set_prev_image)
+        prev_im_btn.setObjectName("setImageButton")
 
         next_im_btn = QtWidgets.QPushButton(self)
         next_im_btn.setText("Next")
         next_im_btn.move(self.width - 100, 20)
         next_im_btn.clicked.connect(self.set_next_image)
+        next_im_btn.setObjectName("setImageButton")
 
 
         # Create label button
@@ -105,10 +113,29 @@ class App(QWidget):
         print(f"Label set as: {label}!")
 
     def set_next_image(self):
-        print("loading next image")
+
+        self.counter += 1
+
+        if self.counter < self.num_images:
+            self.set_image(img_paths[self.counter])
+        # else:
+        #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
+        #     QCoreApplication.quit()
+
 
     def set_prev_image(self):
-        print("loading prev image")
+        if self.counter > 0:
+            self.counter -= 1
+
+            if self.counter < self.num_images:
+                self.set_image(img_paths[self.counter])
+            # else:
+            #     QCoreApplication.quit()
+
+    def set_image(self, path):
+        pixmap = QPixmap(path)
+        self.image_box.setPixmap(pixmap)
+
 
 if __name__ == '__main__':
     # get paths to images
