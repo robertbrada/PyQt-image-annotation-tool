@@ -47,7 +47,7 @@ class App(QWidget):
         self.width = 960
         self.height = 540
 
-        # init data for labels and images
+        # state variables
         self.counter = 0
         self.img_paths = img_paths
         self.labels = labels
@@ -55,6 +55,7 @@ class App(QWidget):
         self.num_images = len(img_paths)
 
         self.label_buttons = []
+        self.appended_labels = {}
 
         # Initialize image variables
         self.image_raw = None
@@ -67,6 +68,26 @@ class App(QWidget):
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
+        self.initButtons()
+
+        # apply styles
+        sshFile = "./styles/button.qss"
+        with open(sshFile, "r") as fh:
+            self.setStyleSheet(fh.read())
+
+    def initButtons(self):
+
+        # Create "Prev Image" and "Next Image" buttons
+        prev_im_btn = QtWidgets.QPushButton(self)
+        prev_im_btn.setText("Prev")
+        prev_im_btn.move(self.width - 190, 20)
+        prev_im_btn.clicked.connect(self.set_prev_image)
+
+        next_im_btn = QtWidgets.QPushButton(self)
+        next_im_btn.setText("Next")
+        next_im_btn.move(self.width - 100, 20)
+        next_im_btn.clicked.connect(self.set_next_image)
+
 
         # Create label button
         for i, label in enumerate(self.labels):
@@ -74,20 +95,20 @@ class App(QWidget):
             button = self.label_buttons[i]
             button.setText(label)
             # 80 is button width, 10 is spacing between buttons
-            button.move((80 + 10) * i + 300, 20)
+            # button.move((80 + 10) * i + 300, 20)
+            button.move(self.width - 190, (45 + 10) * i + 100)
 
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
             button.clicked.connect(lambda state, x=label: self.set_label(x))
 
-        # apply styles
-        sshFile = "./styles/button.qss"
-        with open(sshFile, "r") as fh:
-            self.setStyleSheet(fh.read())
-
-
     def set_label(self, label):
         print(f"Label set as: {label}!")
 
+    def set_next_image(self):
+        print("loading next image")
+
+    def set_prev_image(self):
+        print("loading prev image")
 
 if __name__ == '__main__':
     # get paths to images
