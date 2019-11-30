@@ -1,9 +1,11 @@
 QPushButton {
     background-color: green;
     border: none;
-    padding: 15px;
+    padding: 0px;
     font-weight: bold;
-    color: white
+    color: white;
+    width: 80px;
+    height: 40px
 }
 
 QPushButton:pressed { background-color: lime }
