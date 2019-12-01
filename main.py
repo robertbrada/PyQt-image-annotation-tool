@@ -41,11 +41,8 @@ def get_img_paths(dir, extensions=''):
     return img_paths
 
 
-
-
-
 class App(QWidget):
-    def __init__(self, labels, img_paths, output_file):
+    def __init__(self, labels, img_paths):
         super().__init__()
 
         # init UI state
@@ -93,13 +90,13 @@ class App(QWidget):
         prev_im_btn = QtWidgets.QPushButton(self)
         prev_im_btn.setText("Prev")
         prev_im_btn.move(self.width - 190, 80)
-        prev_im_btn.clicked.connect(self.set_prev_image)
+        prev_im_btn.clicked.connect(self.show_prev_image)
         prev_im_btn.setObjectName("setImageButton")
 
         next_im_btn = QtWidgets.QPushButton(self)
         next_im_btn.setText("Next")
         next_im_btn.move(self.width - 100, 80)
-        next_im_btn.clicked.connect(self.set_next_image)
+        next_im_btn.clicked.connect(self.show_next_image)
         next_im_btn.setObjectName("setImageButton")
 
         # Add "generate csv file" button
@@ -108,7 +105,6 @@ class App(QWidget):
         next_im_btn.move(self.width - 190, 20)
         next_im_btn.clicked.connect(self.generate_csv)
         next_im_btn.setObjectName("generateCsvButton")
-
 
         # Create label button
         for i, label in enumerate(self.labels):
@@ -123,9 +119,16 @@ class App(QWidget):
             button.clicked.connect(lambda state, x=label: self.set_label(x))
 
     def set_label(self, label):
-        print(f"Label set as: {label}!")
+        # get image filename from path (./data/images/img1.jpg → img1.jpg)
+        filename = os.path.split(self.img_paths[self.counter])[-1]
 
-    def set_next_image(self):
+        # set new label
+        self.appended_labels[filename] = label
+
+        # load next image
+        self.show_next_image()
+
+    def show_next_image(self):
 
         self.counter += 1
 
@@ -135,7 +138,7 @@ class App(QWidget):
         #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
         #     QCoreApplication.quit()
 
-    def set_prev_image(self):
+    def show_prev_image(self):
         if self.counter > 0:
             self.counter -= 1
 
@@ -174,7 +177,6 @@ if __name__ == '__main__':
     img_paths = get_img_paths(input_folder, file_extensions)
 
     app = QApplication(sys.argv)
-    ex = App(labels, img_paths, output_file)
+    ex = App(labels, img_paths)
     ex.show()
     sys.exit(app.exec_())
-
