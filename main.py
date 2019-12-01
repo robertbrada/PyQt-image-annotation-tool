@@ -16,16 +16,13 @@ import shutil
 input_folder = './data/images1/'
 
 # labels we want to use
-labels = ["label1", "label2", "label3", "label4"]
+labels = ["label1", "label2", "label3", "label4", "label5", "label6", "label7", "label8", "label9", "label10", "label11", "label12"]
 
 # select one of the following modes: copy, move, none
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
-# 3. none: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'move'  # 'copy', 'move', 'none'
-
-# output csv file
-output_file = 'output.csv'
+# 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
+mode = 'csv'  # 'copy', 'move', 'csv'
 
 # allowed file extensions
 file_extensions = ('.jpg', '.png', '.jpeg')
@@ -43,7 +40,7 @@ def get_img_paths(dir, extensions=''):
 
     for filename in os.listdir(dir):
         if filename.lower().endswith(extensions):
-            img_paths.append(dir + filename)
+            img_paths.append(os.path.join(dir, filename))
 
     return img_paths
 
@@ -62,11 +59,11 @@ class App(QWidget):
         super().__init__()
 
         # init UI state
-        self.title = 'PyQt5 - Annotation tool'
+        self.title = 'PyQt5 - Annotation tool for image classes'
         self.left = 200
         self.top = 200
         self.width = 1000
-        self.height = 600
+        self.height = 700
 
         # state variables
         self.counter = 0
@@ -76,15 +73,18 @@ class App(QWidget):
         self.num_images = len(img_paths)
 
         self.label_buttons = []
-        self.appended_labels = {}
+        self.assigned_labels = {}
 
         # Initialize image variables
         self.image_box = QLabel(self)
         self.img_name_label = QLabel(self)
-        self.img_name_label.setGeometry(20, 0, 300, 20)
+        self.img_name_label.setGeometry(20, 10, 300, 20)
 
         self.progress_bar = QLabel(self)
-        self.progress_bar.setGeometry(20, 20, 100, 20)
+        self.progress_bar.setGeometry(20, 30, 200, 20)
+
+        self.csv_generated_message = QLabel(self)
+        self.csv_generated_message.setGeometry(20, 680, 800, 20)
 
         # init UI
         self.initUI()
@@ -96,7 +96,7 @@ class App(QWidget):
 
         # show image
         self.set_image(self.img_paths[0])
-        self.image_box.move(20, 50)
+        self.image_box.move(20, 60)
 
         # image name
         self.img_name_label.setText(img_paths[self.counter])
@@ -105,7 +105,7 @@ class App(QWidget):
         self.progress_bar.setText(f'1 of {self.num_images}')
 
         # apply styles
-        sshFile = "./styles/button.qss"
+        sshFile = "./styles/custom_styles.qss"
         with open(sshFile, "r") as fh:
             self.setStyleSheet(fh.read())
 
@@ -114,20 +114,20 @@ class App(QWidget):
         # Add "Prev Image" and "Next Image" buttons
         prev_im_btn = QtWidgets.QPushButton(self)
         prev_im_btn.setText("Prev")
-        prev_im_btn.move(self.width - 190, 80)
+        prev_im_btn.move(320, 575)
         prev_im_btn.clicked.connect(self.show_prev_image)
         prev_im_btn.setObjectName("setImageButton")
 
         next_im_btn = QtWidgets.QPushButton(self)
         next_im_btn.setText("Next")
-        next_im_btn.move(self.width - 100, 80)
+        next_im_btn.move(430, 575)
         next_im_btn.clicked.connect(self.show_next_image)
         next_im_btn.setObjectName("setImageButton")
 
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton(self)
         next_im_btn.setText("Generate csv")
-        next_im_btn.move(self.width - 190, 20)
+        next_im_btn.move(375, 630)
         next_im_btn.clicked.connect(self.generate_csv)
         next_im_btn.setObjectName("generateCsvButton")
 
@@ -137,8 +137,7 @@ class App(QWidget):
             button = self.label_buttons[i]
             button.setText(label)
             # 80 is button width, 10 is spacing between buttons
-            # button.move((80 + 10) * i + 300, 20)
-            button.move(self.width - 190, (45 + 10) * i + 150)
+            button.move(self.width - 190, (30 + 10) * i + 60)
 
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
             button.clicked.connect(lambda state, x=label: self.set_label(x))
@@ -148,7 +147,7 @@ class App(QWidget):
         filename = os.path.split(self.img_paths[self.counter])[-1]
 
         # set new label
-        self.appended_labels[filename] = label
+        self.assigned_labels[filename] = label
 
         # copy/move the image into appropriate label folder
         if mode == 'copy':
@@ -169,9 +168,12 @@ class App(QWidget):
             self.set_image(path)
             self.img_name_label.setText(path)
             self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
-        # else:
-        #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
-        #     QCoreApplication.quit()
+            self.set_button_color(path)
+
+        # change button color if last image in dataset
+        elif self.counter == self.num_images - 1:
+            path = self.img_paths[self.counter]
+            self.set_button_color(path)
 
     def show_prev_image(self):
         if self.counter > 0:
@@ -184,26 +186,48 @@ class App(QWidget):
                 self.img_name_label.setText(path)
                 self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
 
+                self.set_button_color(path)
             # else:
             #     QCoreApplication.quit()
 
     def set_image(self, path):
-        pixmap = QPixmap(path).scaled(700, 700, Qt.KeepAspectRatio, Qt.FastTransformation)
+        pixmap = QPixmap(path).scaled(750, 800, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.image_box.setPixmap(pixmap)
 
     def generate_csv(self):
-        filename = 'output.csv'
+        filename = 'assigned_classes.csv'
 
-        with open(filename, "w", newline='') as csv_file:
+        path_to_save = os.path.join(input_folder, 'csv_ouput')
+        make_folder(path_to_save)
+        with open(os.path.join(path_to_save, filename), "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
             writer.writerow(['img'] + self.labels)
 
             # write one-hot labels
-            for img_name, label in self.appended_labels.items():
+            for img_name, label in self.assigned_labels.items():
                 label_one_hot = self.__number_to_one_hot(self.labels.index(label), self.num_labels)
                 writer.writerow([img_name] + list(label_one_hot))
+
+        self.csv_generated_message.setText(f'csv saved to: {os.path.abspath(os.path.join(path_to_save, filename))}')
+        print(f'csv saved to: {os.path.abspath(os.path.join(path_to_save, filename))}')
+
+
+    def set_button_color(self, img_path):
+        for button in self.label_buttons:
+            button.setStyleSheet('background-color: None; height: 40px')
+
+        filename = os.path.split(img_path)[-1]
+        if filename in self.assigned_labels.keys():
+            label_index = self.labels.index(self.assigned_labels[filename])
+            self.label_buttons[label_index].setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white; height: 40px')
+
+    def closeEvent(self, event):
+        print("closing App")
+        self.generate_csv()
+
+
 
     @staticmethod
     def __number_to_one_hot(number, num_classes):
@@ -249,7 +273,7 @@ if __name__ == '__main__':
     img_paths = get_img_paths(input_folder, file_extensions)
 
     # create folders for each label if 'copy' or 'move' modes are selected
-    if mode == 'copy' or 'move':
+    if mode == 'copy' or mode == 'move':
         for label in labels:
             make_folder(os.path.join(input_folder, label))
 

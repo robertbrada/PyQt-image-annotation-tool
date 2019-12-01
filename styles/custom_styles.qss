@@ -1,0 +1,18 @@
+QPushButton#generateCsvButton {
+    background-color: #1E88E5;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+}
+
+QPushButton#generateCsvButton:hover {
+    background-color: #1976D2;
+}
+
+
+QPushButton#generateCsvButton:hover:pressed {
+    background-color: #0D47A1;
+}
+
+
+
