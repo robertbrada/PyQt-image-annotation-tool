@@ -130,9 +130,9 @@ class App(QWidget):
 
     def show_next_image(self):
 
-        self.counter += 1
+        if self.counter < self.num_images - 1:
 
-        if self.counter < self.num_images:
+            self.counter += 1
             self.set_image(img_paths[self.counter])
         # else:
         #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
@@ -151,12 +151,6 @@ class App(QWidget):
         pixmap = QPixmap(path)
         self.image_box.setPixmap(pixmap)
 
-    @staticmethod
-    def number_to_one_hot(number, num_classes):
-        one_hot_arr = np.zeros([num_classes], dtype=int)
-        one_hot_arr[number] = 1
-        return one_hot_arr
-
     def generate_csv(self):
         filename = 'output.csv'
 
@@ -170,6 +164,12 @@ class App(QWidget):
             for img_name, label in self.appended_labels.items():
                 label_one_hot = self.number_to_one_hot(self.labels.index(label), self.num_labels)
                 writer.writerow([img_name] + list(label_one_hot))
+
+    @staticmethod
+    def number_to_one_hot(number, num_classes):
+        one_hot_arr = np.zeros([num_classes], dtype=int)
+        one_hot_arr[number] = 1
+        return one_hot_arr
 
 
 if __name__ == '__main__':
