@@ -3,7 +3,7 @@ import sys
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QCoreApplication, Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSizePolicy
 from PyQt5.QtGui import QIcon, QPixmap
 import numpy as np
 import csv
@@ -63,7 +63,7 @@ class App(QWidget):
         self.left = 200
         self.top = 200
         self.width = 1000
-        self.height = 700
+        self.height = 760
 
         # state variables
         self.counter = 0
@@ -83,8 +83,18 @@ class App(QWidget):
         self.progress_bar = QLabel(self)
         self.progress_bar.setGeometry(20, 30, 200, 20)
 
+        self.csv_note = QLabel(self)
+        self.csv_note.setGeometry(242, 680, 800, 20)
+        self.csv_note.setText('(csv will be also generated automatically after closing the app)')
+        # self.csv_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.csv_note.setAlignment(Qt.AlignCenter)
+
         self.csv_generated_message = QLabel(self)
-        self.csv_generated_message.setGeometry(20, 680, 800, 20)
+        self.csv_generated_message.setGeometry(20, 710, 800, 20)
+        self.csv_generated_message.setStyleSheet('color: #43A047')
+        # self.csv_generated_message.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.csv_generated_message.setAlignment(Qt.AlignCenter)
+
 
         # init UI
         self.initUI()
@@ -102,7 +112,7 @@ class App(QWidget):
         self.img_name_label.setText(img_paths[self.counter])
 
         # progress bar
-        self.progress_bar.setText(f'1 of {self.num_images}')
+        self.progress_bar.setText(f'image 1 of {self.num_images}')
 
         # apply styles
         sshFile = "./styles/custom_styles.qss"
@@ -112,30 +122,24 @@ class App(QWidget):
     def initButtons(self):
 
         # Add "Prev Image" and "Next Image" buttons
-        prev_im_btn = QtWidgets.QPushButton(self)
-        prev_im_btn.setText("Prev")
-        prev_im_btn.move(320, 575)
+        prev_im_btn = QtWidgets.QPushButton("Prev", self)
+        prev_im_btn.move(320, 580)
         prev_im_btn.clicked.connect(self.show_prev_image)
-        prev_im_btn.setObjectName("setImageButton")
 
-        next_im_btn = QtWidgets.QPushButton(self)
-        next_im_btn.setText("Next")
-        next_im_btn.move(430, 575)
+        next_im_btn = QtWidgets.QPushButton("Next", self)
+        next_im_btn.move(430, 580)
         next_im_btn.clicked.connect(self.show_next_image)
-        next_im_btn.setObjectName("setImageButton")
 
         # Add "generate csv file" button
-        next_im_btn = QtWidgets.QPushButton(self)
-        next_im_btn.setText("Generate csv")
-        next_im_btn.move(375, 630)
+        next_im_btn = QtWidgets.QPushButton("Generate csv", self)
+        next_im_btn.move(375, 640)
         next_im_btn.clicked.connect(self.generate_csv)
         next_im_btn.setObjectName("generateCsvButton")
 
         # Create label button
         for i, label in enumerate(self.labels):
-            self.label_buttons.append(QtWidgets.QPushButton(self))
+            self.label_buttons.append(QtWidgets.QPushButton(label, self))
             button = self.label_buttons[i]
-            button.setText(label)
             # 80 is button width, 10 is spacing between buttons
             button.move(self.width - 190, (30 + 10) * i + 60)
 
@@ -167,8 +171,10 @@ class App(QWidget):
 
             self.set_image(path)
             self.img_name_label.setText(path)
-            self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
+            self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
             self.set_button_color(path)
+            self.csv_generated_message.setText('')
+
 
         # change button color if last image in dataset
         elif self.counter == self.num_images - 1:
@@ -187,8 +193,8 @@ class App(QWidget):
                 self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
 
                 self.set_button_color(path)
-            # else:
-            #     QCoreApplication.quit()
+                self.csv_generated_message.setText('')
+
 
     def set_image(self, path):
         pixmap = QPixmap(path).scaled(750, 800, Qt.KeepAspectRatio, Qt.FastTransformation)
