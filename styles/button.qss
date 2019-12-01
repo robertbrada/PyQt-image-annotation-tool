@@ -19,3 +19,4 @@ QPushButton#generateCsvButton {
 
 
 QPushButton:pressed { background-color: lime }
+

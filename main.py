@@ -2,7 +2,7 @@ import os
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap
 import numpy as np
@@ -49,8 +49,8 @@ class App(QWidget):
         self.title = 'PyQt5 - Annotation tool'
         self.left = 200
         self.top = 200
-        self.width = 960
-        self.height = 540
+        self.width = 1000
+        self.height = 600
 
         # state variables
         self.counter = 0
@@ -63,9 +63,13 @@ class App(QWidget):
         self.appended_labels = {}
 
         # Initialize image variables
-        self.image_raw = None
-        self.image = None
         self.image_box = QLabel(self)
+        self.img_name_label = QLabel(self)
+        self.img_name_label.setGeometry(20, 0, 300, 20)
+
+        self.progress_bar = QLabel(self)
+        self.progress_bar.setGeometry(20, 20, 100, 20)
+
 
         # init UI
         self.initUI()
@@ -77,7 +81,13 @@ class App(QWidget):
 
         # show image
         self.set_image(self.img_paths[0])
-        self.image_box.move(20, 20)
+        self.image_box.move(20, 50)
+
+        # image name
+        self.img_name_label.setText(img_paths[self.counter])
+
+        # progress bar
+        self.progress_bar.setText(f'1 of {self.num_images}')
 
         # apply styles
         sshFile = "./styles/button.qss"
@@ -133,7 +143,12 @@ class App(QWidget):
         if self.counter < self.num_images - 1:
 
             self.counter += 1
-            self.set_image(img_paths[self.counter])
+
+            path = self.img_paths[self.counter]
+
+            self.set_image(path)
+            self.img_name_label.setText(path)
+            self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
         # else:
         #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
         #     QCoreApplication.quit()
@@ -143,12 +158,17 @@ class App(QWidget):
             self.counter -= 1
 
             if self.counter < self.num_images:
-                self.set_image(img_paths[self.counter])
+                path = self.img_paths[self.counter]
+
+                self.set_image(path)
+                self.img_name_label.setText(path)
+                self.progress_bar.setText(f'{self.counter + 1} of {self.num_images}')
+
             # else:
             #     QCoreApplication.quit()
 
     def set_image(self, path):
-        pixmap = QPixmap(path)
+        pixmap = QPixmap(path).scaled(700, 700, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.image_box.setPixmap(pixmap)
 
     def generate_csv(self):
@@ -170,6 +190,8 @@ class App(QWidget):
         one_hot_arr = np.zeros([num_classes], dtype=int)
         one_hot_arr[number] = 1
         return one_hot_arr
+
+
 
 
 if __name__ == '__main__':
