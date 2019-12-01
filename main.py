@@ -8,6 +8,7 @@ from PyQt5.QtGui import QIcon, QPixmap
 import numpy as np
 import csv
 import pandas as pd
+import shutil
 
 # ======================================================================
 
@@ -16,6 +17,12 @@ input_folder = './data/images1/'
 
 # labels we want to use
 labels = ["label1", "label2", "label3", "label4"]
+
+# select one of the following modes: copy, move, none
+# 1. copy: Creates folder for each label. Labeled images are copied to these folders
+# 2. move: Creates folder for each label. Labeled images are moved to these folders
+# 3. none: Images in input_folder are just labeled and then csv file with assigned labels is generated
+mode = 'move'  # 'copy', 'move', 'none'
 
 # output csv file
 output_file = 'output.csv'
@@ -39,6 +46,15 @@ def get_img_paths(dir, extensions=''):
             img_paths.append(dir + filename)
 
     return img_paths
+
+
+def make_folder(directory):
+    """
+    Make folder if it doesn't already exist
+    :param directory: The folder destination path
+    """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 class App(QWidget):
@@ -69,7 +85,6 @@ class App(QWidget):
 
         self.progress_bar = QLabel(self)
         self.progress_bar.setGeometry(20, 20, 100, 20)
-
 
         # init UI
         self.initUI()
@@ -135,13 +150,18 @@ class App(QWidget):
         # set new label
         self.appended_labels[filename] = label
 
+        # copy/move the image into appropriate label folder
+        if mode == 'copy':
+            self._copy_image(label, self.img_paths[self.counter])
+        elif mode == 'move':
+            self._move_image(label, self.img_paths[self.counter])
+
         # load next image
         self.show_next_image()
 
     def show_next_image(self):
 
         if self.counter < self.num_images - 1:
-
             self.counter += 1
 
             path = self.img_paths[self.counter]
@@ -182,21 +202,56 @@ class App(QWidget):
 
             # write one-hot labels
             for img_name, label in self.appended_labels.items():
-                label_one_hot = self.number_to_one_hot(self.labels.index(label), self.num_labels)
+                label_one_hot = self.__number_to_one_hot(self.labels.index(label), self.num_labels)
                 writer.writerow([img_name] + list(label_one_hot))
 
     @staticmethod
-    def number_to_one_hot(number, num_classes):
+    def __number_to_one_hot(number, num_classes):
         one_hot_arr = np.zeros([num_classes], dtype=int)
         one_hot_arr[number] = 1
         return one_hot_arr
 
+    @staticmethod
+    def _copy_image(label, file_path):
+        """
+        Copies a file to a new label folder using the shutil library. The file will be copied into a
+        subdirectory called label in the input folder.
+        :param label: The label
+        :param file_path: Path of the original image
+        """
 
+        path_and_name = os.path.split(file_path)
+        img_filename = path_and_name[-1]
+        folder_path = path_and_name[0]
+
+        output_path = os.path.join(folder_path, label, img_filename)
+        shutil.copy(file_path, output_path)
+
+    @staticmethod
+    def _move_image(label, file_path):
+        """
+        Moves a file to a new label folder using the shutil library. The file will be moved into a
+        subdirectory called label in the input folder.
+        :param label: The label
+        :param file_path: Path of the original image
+        """
+
+        path_and_name = os.path.split(file_path)
+        img_filename = path_and_name[-1]
+        folder_path = path_and_name[0]
+
+        output_path = os.path.join(folder_path, label, img_filename)
+        shutil.move(file_path, output_path)
 
 
 if __name__ == '__main__':
-    # get paths to images
+    # get paths to images in input_folder
     img_paths = get_img_paths(input_folder, file_extensions)
+
+    # create folders for each label if 'copy' or 'move' modes are selected
+    if mode == 'copy' or 'move':
+        for label in labels:
+            make_folder(os.path.join(input_folder, label))
 
     app = QApplication(sys.argv)
     ex = App(labels, img_paths)
