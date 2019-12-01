@@ -15,7 +15,7 @@ import pandas as pd
 input_folder = './data/images1/'
 
 # labels we want to use
-labels = ["label1", "label2", "label3"]
+labels = ["label1", "label2", "label3", "label4"]
 
 # output csv file
 output_file = 'output.csv'
@@ -41,26 +41,7 @@ def get_img_paths(dir, extensions=''):
     return img_paths
 
 
-def number_to_one_hot(number, num_classes):
-    one_hot_arr = np.zeros([num_classes], dtype=int)
-    one_hot_arr[number] = 1
-    return one_hot_arr
 
-
-def generate_csv(labels, appended_labels, filename='output.csv'):
-    # save number of labels, which will be used for one-hot encoding
-    num_labels = len(labels)
-
-    with open(filename, "w", newline='') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-
-        # write header
-        writer.writerow(['img'] + labels)
-
-        # write one-hot labels
-        for img_name, label in appended_labels.items():
-            label_one_hot = number_to_one_hot(labels.index(label), num_labels)
-            writer.writerow([img_name] + list(label_one_hot))
 
 
 class App(QWidget):
@@ -108,18 +89,26 @@ class App(QWidget):
 
     def initButtons(self):
 
-        # Create "Prev Image" and "Next Image" buttons
+        # Add "Prev Image" and "Next Image" buttons
         prev_im_btn = QtWidgets.QPushButton(self)
         prev_im_btn.setText("Prev")
-        prev_im_btn.move(self.width - 190, 20)
+        prev_im_btn.move(self.width - 190, 80)
         prev_im_btn.clicked.connect(self.set_prev_image)
         prev_im_btn.setObjectName("setImageButton")
 
         next_im_btn = QtWidgets.QPushButton(self)
         next_im_btn.setText("Next")
-        next_im_btn.move(self.width - 100, 20)
+        next_im_btn.move(self.width - 100, 80)
         next_im_btn.clicked.connect(self.set_next_image)
         next_im_btn.setObjectName("setImageButton")
+
+        # Add "generate csv file" button
+        next_im_btn = QtWidgets.QPushButton(self)
+        next_im_btn.setText("Generate csv")
+        next_im_btn.move(self.width - 190, 20)
+        next_im_btn.clicked.connect(self.generate_csv)
+        next_im_btn.setObjectName("generateCsvButton")
+
 
         # Create label button
         for i, label in enumerate(self.labels):
@@ -128,7 +117,7 @@ class App(QWidget):
             button.setText(label)
             # 80 is button width, 10 is spacing between buttons
             # button.move((80 + 10) * i + 300, 20)
-            button.move(self.width - 190, (45 + 10) * i + 100)
+            button.move(self.width - 190, (45 + 10) * i + 150)
 
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
             button.clicked.connect(lambda state, x=label: self.set_label(x))
@@ -158,6 +147,26 @@ class App(QWidget):
     def set_image(self, path):
         pixmap = QPixmap(path)
         self.image_box.setPixmap(pixmap)
+
+    @staticmethod
+    def number_to_one_hot(number, num_classes):
+        one_hot_arr = np.zeros([num_classes], dtype=int)
+        one_hot_arr[number] = 1
+        return one_hot_arr
+
+    def generate_csv(self):
+        filename = 'output.csv'
+
+        with open(filename, "w", newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+
+            # write header
+            writer.writerow(['img'] + self.labels)
+
+            # write one-hot labels
+            for img_name, label in self.appended_labels.items():
+                label_one_hot = self.number_to_one_hot(self.labels.index(label), self.num_labels)
+                writer.writerow([img_name] + list(label_one_hot))
 
 
 if __name__ == '__main__':

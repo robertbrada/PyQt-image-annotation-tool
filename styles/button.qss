@@ -9,7 +9,12 @@ QPushButton {
 }
 
 QPushButton#setImageButton {
-background-color: black;
+    background-color: black;
+}
+
+QPushButton#generateCsvButton {
+    width: 170px;
+    background-color: #1565C0;
 }
 
 
