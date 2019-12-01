@@ -5,6 +5,9 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtGui import QIcon, QPixmap
+import numpy as np
+import csv
+import pandas as pd
 
 # ======================================================================
 
@@ -29,13 +32,35 @@ def get_img_paths(dir, extensions=''):
     :return: list of all filenames
     '''
 
-    filenames = []
+    img_paths = []
 
     for filename in os.listdir(dir):
         if filename.lower().endswith(extensions):
-            filenames.append(dir + filename)
+            img_paths.append(dir + filename)
 
-    return filenames
+    return img_paths
+
+
+def number_to_one_hot(number, num_classes):
+    one_hot_arr = np.zeros([num_classes], dtype=int)
+    one_hot_arr[number] = 1
+    return one_hot_arr
+
+
+def generate_csv(labels, appended_labels, filename='output.csv'):
+    # save number of labels, which will be used for one-hot encoding
+    num_labels = len(labels)
+
+    with open(filename, "w", newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+
+        # write header
+        writer.writerow(['img'] + labels)
+
+        # write one-hot labels
+        for img_name, label in appended_labels.items():
+            label_one_hot = number_to_one_hot(labels.index(label), num_labels)
+            writer.writerow([img_name] + list(label_one_hot))
 
 
 class App(QWidget):
@@ -67,7 +92,6 @@ class App(QWidget):
         # init UI
         self.initUI()
 
-
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -75,6 +99,7 @@ class App(QWidget):
 
         # show image
         self.set_image(self.img_paths[0])
+        self.image_box.move(20, 20)
 
         # apply styles
         sshFile = "./styles/button.qss"
@@ -95,7 +120,6 @@ class App(QWidget):
         next_im_btn.move(self.width - 100, 20)
         next_im_btn.clicked.connect(self.set_next_image)
         next_im_btn.setObjectName("setImageButton")
-
 
         # Create label button
         for i, label in enumerate(self.labels):
@@ -122,7 +146,6 @@ class App(QWidget):
         #     # not sure if to close app by itself when all images are labeled. Probably not, it's confusing.
         #     QCoreApplication.quit()
 
-
     def set_prev_image(self):
         if self.counter > 0:
             self.counter -= 1
@@ -145,3 +168,4 @@ if __name__ == '__main__':
     ex = App(labels, img_paths, output_file)
     ex.show()
     sys.exit(app.exec_())
+
