@@ -1,14 +1,13 @@
+import csv
 import os
+import shutil
 import sys
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QCoreApplication, Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSizePolicy
-from PyQt5.QtGui import QIcon, QPixmap
 import numpy as np
-import csv
-import pandas as pd
-import shutil
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
 # ======================================================================
 
@@ -16,7 +15,8 @@ import shutil
 input_folder = './data/images1/'
 
 # labels we want to use
-labels = ["label1", "label2", "label3", "label4", "label5", "label6", "label7", "label8", "label9", "label10", "label11", "label12"]
+labels = ["label1", "label2", "label3", "label4", "label5", "label6", "label7", "label8", "label9", "label10",
+          "label11", "label12"]
 
 # select one of the following modes: copy, move, none
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
@@ -59,11 +59,12 @@ class App(QWidget):
         super().__init__()
 
         # init UI state
-        self.title = 'PyQt5 - Annotation tool for image classes'
+        self.title = 'PyQt5 - Annotation tool for assigning image classes'
         self.left = 200
         self.top = 200
         self.width = 1000
         self.height = 760
+        self.img_panel_width = 800
 
         # state variables
         self.counter = 0
@@ -75,34 +76,37 @@ class App(QWidget):
         self.label_buttons = []
         self.assigned_labels = {}
 
-        # Initialize image variables
+        # Initialize Labels
         self.image_box = QLabel(self)
         self.img_name_label = QLabel(self)
-        self.img_name_label.setGeometry(20, 10, 300, 20)
-
         self.progress_bar = QLabel(self)
-        self.progress_bar.setGeometry(20, 30, 200, 20)
-
-        self.csv_note = QLabel(self)
-        self.csv_note.setGeometry(242, 680, 800, 20)
-        self.csv_note.setText('(csv will be also generated automatically after closing the app)')
-        # self.csv_note.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.csv_note.setAlignment(Qt.AlignCenter)
-
+        self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
-        self.csv_generated_message.setGeometry(20, 710, 800, 20)
-        self.csv_generated_message.setStyleSheet('color: #43A047')
-        # self.csv_generated_message.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # self.csv_generated_message.setAlignment(Qt.AlignCenter)
-
 
         # init UI
         self.initUI()
 
     def initUI(self):
+
+
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.initButtons()
+
+        # image name label
+        self.img_name_label.setGeometry(20, 10, self.img_panel_width, 20)
+
+        # progress bar (how many images have I labeled so far)
+        self.progress_bar.setGeometry(20, 30, self.img_panel_width, 20)
+
+        # csv note
+        self.csv_note.setGeometry(20, 680, self.img_panel_width, 20)
+        self.csv_note.setAlignment(Qt.AlignCenter)
+
+        # message that csv was generated
+        self.csv_generated_message.setGeometry(20, 710, self.img_panel_width, 20)
+        self.csv_generated_message.setStyleSheet('color: #43A047')
+        self.csv_generated_message.setAlignment(Qt.AlignCenter)
 
         # show image
         self.set_image(self.img_paths[0])
@@ -150,14 +154,20 @@ class App(QWidget):
         # get image filename from path (./data/images/img1.jpg → img1.jpg)
         filename = os.path.split(self.img_paths[self.counter])[-1]
 
+        # check if this file was already labeled.
+        # If so, save prevous label, so I can change the images's location in case 'copy' or 'move' mode is enabled
+        prev_label = None
+        if filename in self.assigned_labels.keys():
+            prev_label = self.assigned_labels[filename]
+
         # set new label
         self.assigned_labels[filename] = label
 
         # copy/move the image into appropriate label folder
         if mode == 'copy':
-            self._copy_image(label, self.img_paths[self.counter])
+            self._copy_image(label, prev_label, self.img_paths[self.counter])
         elif mode == 'move':
-            self._move_image(label, self.img_paths[self.counter])
+            self._move_image(label, prev_label, self.img_paths[self.counter])
 
         # load next image
         self.show_next_image()
@@ -168,6 +178,12 @@ class App(QWidget):
             self.counter += 1
 
             path = self.img_paths[self.counter]
+            filename = os.path.split(path)[-1]
+
+            # If we have already assigned label to this image and mode is 'move', change the input path.
+            # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
+            if mode == 'move' and filename in self.assigned_labels.keys():
+                path = os.path.join(input_folder, self.assigned_labels[filename], filename)
 
             self.set_image(path)
             self.img_name_label.setText(path)
@@ -176,7 +192,7 @@ class App(QWidget):
             self.csv_generated_message.setText('')
 
 
-        # change button color if last image in dataset
+        # change button color if this is last image in dataset
         elif self.counter == self.num_images - 1:
             path = self.img_paths[self.counter]
             self.set_button_color(path)
@@ -187,6 +203,12 @@ class App(QWidget):
 
             if self.counter < self.num_images:
                 path = self.img_paths[self.counter]
+                filename = os.path.split(path)[-1]
+
+                # If we have already assigned label to this image and mode is 'move', change the input path.
+                # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
+                if mode == 'move' and filename in self.assigned_labels.keys():
+                    path = os.path.join(input_folder, self.assigned_labels[filename], filename)
 
                 self.set_image(path)
                 self.img_name_label.setText(path)
@@ -195,9 +217,8 @@ class App(QWidget):
                 self.set_button_color(path)
                 self.csv_generated_message.setText('')
 
-
     def set_image(self, path):
-        pixmap = QPixmap(path).scaled(750, 800, Qt.KeepAspectRatio, Qt.FastTransformation)
+        pixmap = QPixmap(path).scaled(750, self.img_panel_width, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.image_box.setPixmap(pixmap)
 
     def generate_csv(self):
@@ -219,7 +240,6 @@ class App(QWidget):
         self.csv_generated_message.setText(f'csv saved to: {os.path.abspath(os.path.join(path_to_save, filename))}')
         print(f'csv saved to: {os.path.abspath(os.path.join(path_to_save, filename))}')
 
-
     def set_button_color(self, img_path):
         for button in self.label_buttons:
             button.setStyleSheet('background-color: None; height: 40px')
@@ -227,13 +247,12 @@ class App(QWidget):
         filename = os.path.split(img_path)[-1]
         if filename in self.assigned_labels.keys():
             label_index = self.labels.index(self.assigned_labels[filename])
-            self.label_buttons[label_index].setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white; height: 40px')
+            self.label_buttons[label_index].setStyleSheet(
+                'border: 1px solid #43A047; background-color: #4CAF50; color: white; height: 40px')
 
     def closeEvent(self, event):
         print("closing App")
         self.generate_csv()
-
-
 
     @staticmethod
     def __number_to_one_hot(number, num_classes):
@@ -242,7 +261,7 @@ class App(QWidget):
         return one_hot_arr
 
     @staticmethod
-    def _copy_image(label, file_path):
+    def _copy_image(label, prev_label, file_path):
         """
         Copies a file to a new label folder using the shutil library. The file will be copied into a
         subdirectory called label in the input folder.
@@ -250,15 +269,17 @@ class App(QWidget):
         :param file_path: Path of the original image
         """
 
-        path_and_name = os.path.split(file_path)
-        img_filename = path_and_name[-1]
-        folder_path = path_and_name[0]
+        img_filename = os.path.split(file_path)[-1]
 
-        output_path = os.path.join(folder_path, label, img_filename)
+        output_path = os.path.join(input_folder, label, img_filename)
         shutil.copy(file_path, output_path)
 
+        # remove image from it's previous location
+        if prev_label:
+            os.remove(os.path.join(input_folder, prev_label, img_filename))
+
     @staticmethod
-    def _move_image(label, file_path):
+    def _move_image(label, prev_label, file_path):
         """
         Moves a file to a new label folder using the shutil library. The file will be moved into a
         subdirectory called label in the input folder.
@@ -266,11 +287,15 @@ class App(QWidget):
         :param file_path: Path of the original image
         """
 
-        path_and_name = os.path.split(file_path)
-        img_filename = path_and_name[-1]
-        folder_path = path_and_name[0]
+        img_filename = os.path.split(file_path)[-1]
 
-        output_path = os.path.join(folder_path, label, img_filename)
+        # if the image was labeled before, it means it was moved to another directory (named as prev_label)
+        # for that reason you have to change the path to the image file (= file_path)
+        if prev_label:
+            file_path = os.path.join(input_folder, prev_label, img_filename)
+
+        output_path = os.path.join(input_folder, label, img_filename)
+
         shutil.move(file_path, output_path)
 
 
