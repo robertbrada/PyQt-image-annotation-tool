@@ -11,9 +11,10 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
 # ======================================================================
+# SET THESE PARAMETERS AND RUN main.py SCRIPT
 
 # folder with images we want to label (don't forget "/" at the end)
-INPUT_FOLDER = './data/images/'
+input_folder = './data/images/'
 
 # labels we want to use
 labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "label 7", "label 8", "label 9", "label 10",
@@ -23,9 +24,9 @@ labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "lab
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'csv'  # 'copy', 'move', 'csv'
+mode = 'move'  # 'copy', 'move', 'csv'
 
-# allowed file extensions
+# allowed file extensions (images in INPUT_FOLDER with these extensions will be loaded)
 file_extensions = ('.jpg', '.png', '.jpeg')
 
 
@@ -74,9 +75,10 @@ class App(QWidget):
         self.labels = labels
         self.num_labels = len(labels)
         self.num_images = len(img_paths)
-
-        self.label_buttons = []
         self.assigned_labels = {}
+
+        # initialize list to save all label buttons
+        self.label_buttons = []
 
         # Initialize Labels
         self.image_box = QLabel(self)
@@ -112,6 +114,7 @@ class App(QWidget):
         # show image
         self.set_image(self.img_paths[0])
         self.image_box.move(20, 60)
+        self.image_box.setAlignment(Qt.AlignTop)
 
         # image name
         self.img_name_label.setText(img_paths[self.counter])
@@ -144,11 +147,10 @@ class App(QWidget):
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
         next_im_btn.move(375, 640)
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes.csv': self.generate_csv(filename))
-
         next_im_btn.setObjectName("generateCsvButton")
 
         # Create button for each label
-        xshift = 0  # variable that helps to compute x-coordinate of button in UI
+        x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         for i, label in enumerate(self.labels):
             self.label_buttons.append(QtWidgets.QPushButton(label, self))
             button = self.label_buttons[i]
@@ -158,19 +160,24 @@ class App(QWidget):
             button.clicked.connect(lambda state, x=label: self.set_label(x))
 
             # place button in GUI (create multiple columns if there is more than 10 button)
-            yshift = (30 + 10) * (i % 10)
-            if (i != 0 and (i % 10) == 0):
-                xshift += 120
-                yshift = 0
+            y_shift = (30 + 10) * (i % 10)
+            if (i != 0 and i % 10 == 0):
+                x_shift += 120
+                y_shift = 0
 
-            button.move(self.img_panel_width + 20 + xshift, yshift + 60)
+            button.move(self.img_panel_width + 20 + x_shift, y_shift + 60)
 
     def set_label(self, label):
+        """
+        Sets the label for just loaded image
+        :param label: selected label
+        """
+
         # get image filename from path (./data/images/img1.jpg → img1.jpg)
         filename = os.path.split(self.img_paths[self.counter])[-1]
 
         # check if this file was already labeled.
-        # If so, save prevous label, so I can change the images's location in case 'copy' or 'move' mode is enabled
+        # If so, save previous label, so I can change the images's location in case 'copy' or 'move' mode is enabled
         prev_label = None
         if filename in self.assigned_labels.keys():
             prev_label = self.assigned_labels[filename]
@@ -200,7 +207,7 @@ class App(QWidget):
             # If we have already assigned label to this image and mode is 'move', change the input path.
             # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
             if mode == 'move' and filename in self.assigned_labels.keys():
-                path = os.path.join(INPUT_FOLDER, self.assigned_labels[filename], filename)
+                path = os.path.join(input_folder, self.assigned_labels[filename], filename)
 
             self.set_image(path)
             self.img_name_label.setText(path)
@@ -228,7 +235,7 @@ class App(QWidget):
                 # If we have already assigned label to this image and mode is 'move', change the input path.
                 # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
                 if mode == 'move' and filename in self.assigned_labels.keys():
-                    path = os.path.join(INPUT_FOLDER, self.assigned_labels[filename], filename)
+                    path = os.path.join(input_folder, self.assigned_labels[filename], filename)
 
                 self.set_image(path)
                 self.img_name_label.setText(path)
@@ -246,11 +253,16 @@ class App(QWidget):
         # create pixmap and scale it appropriately, so that images stay in the dedicated area no matter the resolution
         pixmap = QPixmap(path).scaled(self.img_panel_height, self.img_panel_width, Qt.KeepAspectRatio,
                                       Qt.FastTransformation)
+
         self.image_box.setPixmap(pixmap)
 
     def generate_csv(self, out_filename):
-
-        path_to_save = os.path.join(INPUT_FOLDER, 'csv_ouput')
+        """
+        Generates and saves csv file with assigned labels.
+        Assigned label is represented as one-hot vector.
+        :param out_filename: name of csv file to be generated
+        """
+        path_to_save = os.path.join(input_folder, 'csv_ouput')
         make_folder(path_to_save)
         with open(os.path.join(path_to_save, out_filename), "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
@@ -312,14 +324,14 @@ class App(QWidget):
         # get image filename (e.g. img_1.jpg)
         img_filename = os.path.split(file_path)[-1]
 
-        output_path = os.path.join(INPUT_FOLDER, label, img_filename)
+        output_path = os.path.join(input_folder, label, img_filename)
 
         # copy image to a new location
         shutil.copy(file_path, output_path)
 
         # remove image from it's previous location if the image was labeled before
         if prev_label:
-            os.remove(os.path.join(INPUT_FOLDER, prev_label, img_filename))
+            os.remove(os.path.join(input_folder, prev_label, img_filename))
 
     @staticmethod
     def _move_image(label, prev_label, file_path):
@@ -336,9 +348,9 @@ class App(QWidget):
         # if the image was labeled before, it means it was moved to another directory (named as prev_label)
         # for that reason you have to change the path to the image file (= file_path)
         if prev_label:
-            file_path = os.path.join(INPUT_FOLDER, prev_label, img_filename)
+            file_path = os.path.join(input_folder, prev_label, img_filename)
 
-        output_path = os.path.join(INPUT_FOLDER, label, img_filename)
+        output_path = os.path.join(input_folder, label, img_filename)
 
         # move image to a new location
         shutil.move(file_path, output_path)
@@ -346,12 +358,12 @@ class App(QWidget):
 
 if __name__ == '__main__':
     # get paths to images in input_folder
-    img_paths = get_img_paths(INPUT_FOLDER, file_extensions)
+    img_paths = get_img_paths(input_folder, file_extensions)
 
     # create folders for each label if 'copy' or 'move' modes are selected
     if mode == 'copy' or mode == 'move':
         for label in labels:
-            make_folder(os.path.join(INPUT_FOLDER, label))
+            make_folder(os.path.join(input_folder, label))
 
     # run the application
     app = QApplication(sys.argv)
