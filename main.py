@@ -8,7 +8,7 @@ import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox
 
 # ======================================================================
 # SET THESE PARAMETERS AND RUN main.py SCRIPT
@@ -24,7 +24,7 @@ labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "lab
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'move'  # 'copy', 'move', 'csv'
+mode = 'copy'  # 'copy', 'move', 'csv'
 
 # allowed file extensions (images in INPUT_FOLDER with these extensions will be loaded)
 file_extensions = ('.jpg', '.png', '.jpeg')
@@ -67,7 +67,7 @@ class App(QWidget):
         self.width = 1080
         self.height = 760
         self.img_panel_width = 800
-        self.img_panel_height = 750
+        self.img_panel_height = 600
 
         # state variables
         self.counter = 0
@@ -86,6 +86,7 @@ class App(QWidget):
         self.progress_bar = QLabel(self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
+        self.showNextCheckBox = QCheckBox("Automatically show next\nimage when labeled", self)
 
         # init UI
         self.initUI()
@@ -94,7 +95,14 @@ class App(QWidget):
 
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
+
+        # create buttons
         self.initButtons()
+
+        # create checkbox
+        self.showNextCheckBox.setChecked(True)
+        self.showNextCheckBox.setGeometry(820, 560, 200, 60)
+
 
         # image name label
         self.img_name_label.setGeometry(20, 10, self.img_panel_width, 20)
@@ -192,7 +200,10 @@ class App(QWidget):
             self._move_image(label, prev_label, self.img_paths[self.counter])
 
         # load next image
-        self.show_next_image()
+        if self.showNextCheckBox.isChecked():
+            self.show_next_image()
+        else:
+            self.set_button_color(filename)
 
     def show_next_image(self):
         """
@@ -359,6 +370,10 @@ class App(QWidget):
 if __name__ == '__main__':
     # get paths to images in input_folder
     img_paths = get_img_paths(input_folder, file_extensions)
+
+    # throw an exception when n files found
+    if len(img_paths) == 0:
+        raise Exception(f'No images found in {input_folder}')
 
     # create folders for each label if 'copy' or 'move' modes are selected
     if mode == 'copy' or mode == 'move':
