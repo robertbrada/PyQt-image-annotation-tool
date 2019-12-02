@@ -171,7 +171,7 @@ class SetParametersDialog(QWidget):
 
                 # place input and labels
                 label_input.setGeometry(60 + 60 + x_shift, y_shift + 280, 120, 26)
-                label.setGeometry(60 + x_shift, y_shift + 280, 120, 26)
+                label.setGeometry(60 + x_shift, y_shift + 280, 60, 26)
 
                 label_input.show()
                 label.show()
