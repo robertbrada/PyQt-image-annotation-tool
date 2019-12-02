@@ -24,7 +24,7 @@ labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "lab
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'copy'  # 'copy', 'move', 'csv'
+mode = 'csv'  # 'copy', 'move', 'csv'
 
 # allowed file extensions (images in INPUT_FOLDER with these extensions will be loaded)
 file_extensions = ('.jpg', '.png', '.jpeg')
@@ -64,10 +64,10 @@ class App(QWidget):
         self.title = 'PyQt5 - Annotation tool for assigning image classes'
         self.left = 200
         self.top = 200
-        self.width = 1080
+        self.width = 1220
         self.height = 760
         self.img_panel_width = 800
-        self.img_panel_height = 600
+        self.img_panel_height = 750
 
         # state variables
         self.counter = 0
@@ -86,7 +86,7 @@ class App(QWidget):
         self.progress_bar = QLabel(self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
-        self.showNextCheckBox = QCheckBox("Automatically show next\nimage when labeled", self)
+        self.showNextCheckBox = QCheckBox("Automatically show next image when labeled", self)
 
         # init UI
         self.initUI()
@@ -101,8 +101,7 @@ class App(QWidget):
 
         # create checkbox
         self.showNextCheckBox.setChecked(True)
-        self.showNextCheckBox.setGeometry(820, 560, 200, 60)
-
+        self.showNextCheckBox.setGeometry(300, 64, 300, 20)
 
         # image name label
         self.img_name_label.setGeometry(20, 10, self.img_panel_width, 20)
@@ -111,17 +110,15 @@ class App(QWidget):
         self.progress_bar.setGeometry(20, 30, self.img_panel_width, 20)
 
         # csv note
-        self.csv_note.setGeometry(20, 680, self.img_panel_width, 20)
-        self.csv_note.setAlignment(Qt.AlignCenter)
+        self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
 
         # message that csv was generated
-        self.csv_generated_message.setGeometry(20, 710, self.img_panel_width, 20)
+        self.csv_generated_message.setGeometry(self.img_panel_width + 20, 660, 800, 20)
         self.csv_generated_message.setStyleSheet('color: #43A047')
-        self.csv_generated_message.setAlignment(Qt.AlignCenter)
 
         # show image
         self.set_image(self.img_paths[0])
-        self.image_box.move(20, 60)
+        self.image_box.setGeometry(20, 100, self.img_panel_width, self.img_panel_height)
         self.image_box.setAlignment(Qt.AlignTop)
 
         # image name
@@ -144,16 +141,16 @@ class App(QWidget):
 
         # Add "Prev Image" and "Next Image" buttons
         prev_im_btn = QtWidgets.QPushButton("Prev", self)
-        prev_im_btn.move(320, 580)
+        prev_im_btn.move(20, 60)
         prev_im_btn.clicked.connect(self.show_prev_image)
 
         next_im_btn = QtWidgets.QPushButton("Next", self)
-        next_im_btn.move(430, 580)
+        next_im_btn.move(130, 60)
         next_im_btn.clicked.connect(self.show_next_image)
 
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
-        next_im_btn.move(375, 640)
+        next_im_btn.move(self.img_panel_width + 20, 600)
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes.csv': self.generate_csv(filename))
         next_im_btn.setObjectName("generateCsvButton")
 
@@ -173,7 +170,7 @@ class App(QWidget):
                 x_shift += 120
                 y_shift = 0
 
-            button.move(self.img_panel_width + 20 + x_shift, y_shift + 60)
+            button.move(self.img_panel_width + 20 + x_shift, y_shift + 100)
 
     def set_label(self, label):
         """
