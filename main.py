@@ -31,6 +31,7 @@ file_extensions = ('.jpg', '.png', '.jpeg')
 
 
 # ======================================================================
+
 def get_img_paths(dir, extensions=''):
     '''
     :param dir: folder with files
