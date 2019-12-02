@@ -7,8 +7,9 @@ import math
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget
+from PyQt5.QtGui import QPixmap, QIntValidator
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
+    QInputDialog
 
 # ======================================================================
 # SET THESE PARAMETERS AND RUN main.py SCRIPT
@@ -56,38 +57,62 @@ def make_folder(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+
 class SetParametersDialog(QWidget):
     def __init__(self):
         super().__init__()
 
+        # window variables
+        self.width = 800
+        self.height = 800
+
+        # state variables
         self.selectedFolder = ''
         self.num_labels = 0
-        self.labels = []
+        self.label_inputs = []
+        self.label_headlines = []
+
+        # init UI components
+        self.headlineFolder = QLabel('1. Select folder with images you want to label', self)
+        self.selectedFolderLabel = QLabel(self)
+        self.browse_button = QtWidgets.QPushButton("Browse", self)
+
+        self.headlineNumLabels = QLabel('2. How many unique labels do you want to assign?', self)
+        self.numLabelsInput = QLineEdit(self)
+        self.confirmNumLabels = QtWidgets.QPushButton("Ok", self)
+
+        self.next_button = QtWidgets.QPushButton("Next", self)
+
+        self.headlineLabelInputs = QLabel(self)
+        self.onlyInt = QIntValidator()
 
         self.initUI()
-
 
     def initUI(self):
         # self.selectFolderDialog = QFileDialog.getExistingDirectory(self, 'Select directory')
         self.setWindowTitle('PyQt5 - Annotation tool - Parameters setup')
-        self.setGeometry(0,0,800,800)
+        self.setGeometry(0, 0, self.width, self.height)
+        self.centerOnScreen()
 
-        self.headlineFolder = QLabel('Select folder with images you want to label', self)
         self.headlineFolder.setGeometry(60, 40, 300, 20)
 
-        self.selectedFolderLabel = QLabel(self)
-        self.selectedFolderLabel.setGeometry(160, 81, 560, 26)
+        self.selectedFolderLabel.setGeometry(60, 76, 582, 26)
         self.selectedFolderLabel.setObjectName("selectedFolderLabel")
 
-        self.browse_button=QtWidgets.QPushButton("Browse", self)
-        self.browse_button.move(60, 80)
+        self.browse_button.move(self.width -60 - 100, 75)
         self.browse_button.clicked.connect(self.pick_new)
 
-        self.browse_button = QtWidgets.QPushButton("Next", self)
-        self.browse_button.move(360, 720)
-        self.browse_button.clicked.connect(self.continue_app)
+        # Create textbox
+        self.headlineNumLabels.move(60, 140)
+        self.numLabelsInput.setGeometry(60, 171, 60, 26)
+        self.numLabelsInput.setValidator(self.onlyInt)
+        self.confirmNumLabels.move(118, 170)
+        self.confirmNumLabels.clicked.connect(self.generate_label_inputs)
 
-        self.centerOnScreen()
+        self.next_button.move(360, 720)
+        self.next_button.clicked.connect(self.continue_app)
+
+        # self.getInteger()
 
         # apply custom styles
         try:
@@ -103,7 +128,7 @@ class SetParametersDialog(QWidget):
         """
         resolution = QDesktopWidget().screenGeometry()
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
-                    (resolution.height() / 2) - (self.frameSize().height() / 2))
+                  (resolution.height() / 2) - (self.frameSize().height() / 2))
 
     def pick_new(self):
         """
@@ -115,9 +140,46 @@ class SetParametersDialog(QWidget):
         self.selectedFolderLabel.setText(folder_path)
         self.selectedFolder = folder_path
 
+    def generate_label_inputs(self):
+        if self.numLabelsInput.text() != '':
+            self.num_labels = int(self.numLabelsInput.text())
+
+            # delete previously generated widgets
+            for input, headline in zip(self.label_inputs, self.label_headlines):
+                input.deleteLater()
+                headline.deleteLater()
+
+            self.label_inputs = []
+            self.label_headlines = []
+
+            self.headlineLabelInputs.setText('3. Fill in the labels and click "Next"')
+            self.headlineLabelInputs.setGeometry(60, 230, 300, 20)
+
+            x_shift = 0  # variable that helps to compute x-coordinate of label in UI
+            for i in range(self.num_labels):
+                self.label_inputs.append(QtWidgets.QLineEdit(self))
+                self.label_headlines.append(QLabel(f'label {i+1}:', self))
+
+                label_input = self.label_inputs[i]
+                label = self.label_headlines[i]
+
+                # place button in GUI (create multiple columns if there is more than 10 button)
+                y_shift = (30 + 10) * (i % 10)
+                if i != 0 and i % 10 == 0:
+                    x_shift += 240
+                    y_shift = 0
+
+                # place input and labels
+                label_input.setGeometry(60 + 60 + x_shift, y_shift + 280, 120, 26)
+                label.setGeometry(60 + x_shift, y_shift + 280, 120, 26)
+
+                label_input.show()
+                label.show()
+
     def continue_app(self):
         self.close()
         App(labels, img_paths).show()
+
 
 class App(QWidget):
     def __init__(self, labels, img_paths):
