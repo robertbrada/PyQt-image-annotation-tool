@@ -80,11 +80,13 @@ class SetParametersDialog(QWidget):
         self.headlineNumLabels = QLabel('2. How many unique labels do you want to assign?', self)
         self.numLabelsInput = QLineEdit(self)
         self.confirmNumLabels = QtWidgets.QPushButton("Ok", self)
+        self.onlyInt = QIntValidator()
 
         self.next_button = QtWidgets.QPushButton("Next", self)
 
         self.headlineLabelInputs = QLabel(self)
-        self.onlyInt = QIntValidator()
+
+        self.error_message = QLabel(self)
 
         self.initUI()
 
@@ -112,7 +114,9 @@ class SetParametersDialog(QWidget):
         self.next_button.move(360, 720)
         self.next_button.clicked.connect(self.continue_app)
 
-        # self.getInteger()
+        self.error_message.setGeometry(20, 690, self.width-20, 20)
+        self.error_message.setAlignment(Qt.AlignCenter)
+        self.error_message.setStyleSheet('color: red')
 
         # apply custom styles
         try:
@@ -176,9 +180,27 @@ class SetParametersDialog(QWidget):
                 label_input.show()
                 label.show()
 
+    def check_validity(self):
+        if self.selectedFolder == '':
+            return False, 'Input folder has to be selected.'
+
+        num_labels_input = self.numLabelsInput.text().strip()
+        if num_labels_input == '' or num_labels_input == '0':
+            return False, 'Number of labels has to be number greater than 0.'
+
+        for label in self.label_inputs:
+            if label.text().strip() == '':
+                return False, 'All label fields has to be filled.'
+
+        return True, 'Form ok'
+
     def continue_app(self):
-        self.close()
-        App(labels, img_paths).show()
+        form_is_valid, message = self.check_validity()
+        if form_is_valid:
+            self.close()
+            App(labels, img_paths).show()
+        else:
+            self.error_message.setText(message)
 
 
 class App(QWidget):
