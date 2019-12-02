@@ -14,7 +14,10 @@ QPushButton#generateCsvButton:hover:pressed {
     background-color: #0D47A1;
 }
 
-
+QLabel#selectedFolderLabel {
+background-color: white;
+border: 1px solid #aaa
+}
 
 
 

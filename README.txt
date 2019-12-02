@@ -6,7 +6,7 @@ For example you have folder ./data/images/ with a lot of images and you need to 
 label to each image (or to some of the images). 
 
 This app can move/copy images to folders that are named as desired labels.
-This app can generate csv file with assigned label.
+This app can generate csv file with assigned labels.
 
 -------------------------------------------------------------------------------------------------------------
 
