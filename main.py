@@ -14,17 +14,16 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialo
 # ======================================================================
 # SET THESE PARAMETERS AND RUN main.py SCRIPT
 
-# labels we want to use
-labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "label 7", "label 8", "label 9", "label 10",
-          "label 11", "label 12", "label 13"]
-
 # select one of the following modes: copy, move, none
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'csv'  # 'copy', 'move', 'csv'
+mode = 'move'  # 'copy', 'move', 'csv'
+
 
 # ======================================================================
+
+
 
 def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
     '''
@@ -72,7 +71,7 @@ class SetupWindow(QWidget):
 
         self.headlineNumLabels = QLabel('2. How many unique labels do you want to assign?', self)
         self.numLabelsInput = QLineEdit(self)
-        self.confirmNumLabels = QtWidgets.QPushButton("Ok", self)
+        self.confirmNumLabels = QtWidgets.QPushButton("Set", self)
         self.onlyInt = QIntValidator()
 
         self.next_button = QtWidgets.QPushButton("Next", self)
@@ -234,6 +233,10 @@ class LabelerWindow(QWidget):
         self.csv_generated_message = QLabel(self)
         self.showNextCheckBox = QCheckBox("Automatically show next image when labeled", self)
 
+        # create label folders
+        if mode == 'copy' or mode == 'move':
+            self.create_label_folders(labels)
+
         # init UI
         self.initUI()
 
@@ -326,28 +329,72 @@ class LabelerWindow(QWidget):
         """
 
         # get image filename from path (./data/images/img1.jpg → img1.jpg)
-        filename = os.path.split(self.img_paths[self.counter])[-1]
+        img_path = self.img_paths[self.counter]
+        img_name = os.path.split(img_path)[-1]
 
-        # check if this file was already labeled.
-        # If so, save previous label, so I can change the images's location in case 'copy' or 'move' mode is enabled
-        prev_label = None
-        if filename in self.assigned_labels.keys():
-            prev_label = self.assigned_labels[filename]
 
-        # set new label
-        self.assigned_labels[filename] = label
+        # if the img has some label already
+        if img_name in self.assigned_labels.keys():
 
-        # copy/move the image into appropriate label folder
-        if mode == 'copy':
-            self._copy_image(label, prev_label, self.img_paths[self.counter])
-        elif mode == 'move':
-            self._move_image(label, prev_label, self.img_paths[self.counter])
+            # label is already there = means tht user want's to remove label
+            if label in self.assigned_labels[img_name]:
+                self.assigned_labels[img_name].remove(label)
+
+                # remove key from dictionary if no labels are assigned to this image
+                if len(self.assigned_labels[img_name]) == 0:
+                    self.assigned_labels.pop(img_name, None)
+
+                # remove image from appropriate folder
+                if mode == 'copy':
+                    os.remove(os.path.join(self.input_folder, label, img_name))
+
+                elif mode == 'move':
+                    # label was in assigned labels, so I want to remove it from label folder,
+                    # but this was the last label, so move the image to input folder.
+                    # Don't remove it, because it it not save anywehre else
+                    if img_name not in self.assigned_labels.keys():
+                        shutil.move(os.path.join(self.input_folder, label, img_name), self.input_folder)
+                    else:
+                        # label was in assigned labels and the image is store in another label folder,
+                        # so I want to remove it from current label folder
+                        os.remove(os.path.join(self.input_folder, label, img_name))
+
+            # label is not there yet. But the image has some labels already
+            else:
+                self.assigned_labels[img_name].append(label)
+
+                # path to copy/move images
+                copy_to = os.path.join(self.input_folder, label)
+
+                # copy/move the image into appropriate label folder
+                if mode == 'copy':
+                    # the image is stored in input_folder, so i can copy it from there (differs from 'move' option)
+                    shutil.copy(img_path, copy_to)
+
+                elif mode == 'move':
+                    # the image doesn't have to be stored in input_folder anymore.
+                    # get the path where the image is stored
+                    copy_from = os.path.join(self.input_folder, self.assigned_labels[img_name][0], img_name)
+                    shutil.copy(copy_from, copy_to)
+
+        else:
+            # Image has no labels yet. Set new label and copy/move
+
+            self.assigned_labels[img_name] = [label]
+            # move copy images to appropriate directories
+            copy_to = os.path.join(self.input_folder, label)
+
+            if mode == 'copy':
+                shutil.copy(img_path, copy_to)
+            elif mode == 'move':
+                shutil.move(img_path, copy_to)
+
 
         # load next image
         if self.showNextCheckBox.isChecked():
             self.show_next_image()
         else:
-            self.set_button_color(filename)
+            self.set_button_color(img_name)
 
     def show_next_image(self):
         """
@@ -362,7 +409,7 @@ class LabelerWindow(QWidget):
             # If we have already assigned label to this image and mode is 'move', change the input path.
             # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
             if mode == 'move' and filename in self.assigned_labels.keys():
-                path = os.path.join(self.input_folder, self.assigned_labels[filename], filename)
+                path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
             self.set_image(path)
             self.img_name_label.setText(path)
@@ -390,7 +437,7 @@ class LabelerWindow(QWidget):
                 # If we have already assigned label to this image and mode is 'move', change the input path.
                 # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
                 if mode == 'move' and filename in self.assigned_labels.keys():
-                    path = os.path.join(self.input_folder, self.assigned_labels[filename], filename)
+                    path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
                 self.set_image(path)
                 self.img_name_label.setText(path)
@@ -439,13 +486,18 @@ class LabelerWindow(QWidget):
         changes color of button which corresponds to selected label
         :filename filename of loaded image:
         """
-        for button in self.label_buttons:
-            button.setStyleSheet('background-color: None')
 
         if filename in self.assigned_labels.keys():
-            label_index = self.labels.index(self.assigned_labels[filename])
-            self.label_buttons[label_index].setStyleSheet(
-                'border: 1px solid #43A047; background-color: #4CAF50; color: white')
+            assigned_labels = self.assigned_labels[filename]
+        else:
+            assigned_labels = []
+
+        for button in self.label_buttons:
+            if button.text() in assigned_labels:
+                button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
+            else:
+                button.setStyleSheet('background-color: None')
+
 
     def closeEvent(self, event):
         """
@@ -467,57 +519,19 @@ class LabelerWindow(QWidget):
         one_hot_arr[number] = 1
         return one_hot_arr
 
-    # @staticmethod
-    def _copy_image(self, label, prev_label, img_path):
-        """
-        Copies a file to a new label folder using the shutil library. The file will be copied into a
-        subdirectory called label in the input folder.
-        :param label: The label
-        :param img_path: Path of the original image
-        """
-
-        # get image filename (e.g. img_1.jpg)
-        img_filename = os.path.split(img_path)[-1]
-
-        output_path = os.path.join(self.input_folder, label, img_filename)
-
-        # copy image to a new location
-        shutil.copy(img_path, output_path)
-
-        # remove image from it's previous location if the image was labeled before
-        if prev_label:
-            os.remove(os.path.join(self.input_folder, prev_label, img_filename))
-
-    # @staticmethod
-    def _move_image(self, label, prev_label, img_path):
-        """
-        Moves a file to a new label folder using the shutil library. The file will be moved into a
-        subdirectory called label in the input folder.
-        :param label: The label
-        :param img_path: Path of the original image
-        """
-
-        # get image filename (e.g. img_1.jpg)
-        img_filename = os.path.split(img_path)[-1]
-
-        # if the image was labeled before, it means it was moved to another directory (named as prev_label)
-        # for that reason you have to change the path to the image file (= file_path)
-        if prev_label:
-            img_path = os.path.join(self.input_folder, prev_label, img_filename)
-
-        output_path = os.path.join(self.input_folder, label, img_filename)
-
-        # move image to a new location
-        shutil.move(img_path, output_path)
+    @staticmethod
+    def create_label_folders(labels):
+        for label in labels:
+            make_folder(os.path.join(input_folder, label))
 
 
 if __name__ == '__main__':
 
     input_folder = './data/images/'
     # create folders for each label if 'copy' or 'move' modes are selected
-    if mode == 'copy' or mode == 'move':
-        for label in labels:
-            make_folder(os.path.join(input_folder, label))
+    # if mode == 'copy' or mode == 'move':
+    #     for label in labels:
+    #         make_folder(os.path.join(input_folder, label))
 
     # run the application
     app = QApplication(sys.argv)
