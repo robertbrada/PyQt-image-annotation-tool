@@ -14,9 +14,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialo
 # ======================================================================
 # SET THESE PARAMETERS AND RUN main.py SCRIPT
 
-# folder with images we want to label (don't forget "/" at the end)
-input_folder = './data/images/'
-
 # labels we want to use
 labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "label 7", "label 8", "label 9", "label 10",
           "label 11", "label 12", "label 13"]
@@ -27,16 +24,12 @@ labels = ["label 1", "label 2", "label 3", "label 4", "label 5", "label 6", "lab
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
 mode = 'csv'  # 'copy', 'move', 'csv'
 
-# allowed file extensions (images in INPUT_FOLDER with these extensions will be loaded)
-file_extensions = ('.jpg', '.png', '.jpeg')
-
-
 # ======================================================================
 
-def get_img_paths(dir, extensions=''):
+def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
     '''
     :param dir: folder with files
-    :param extensions: tuple with file endings. e.g. ('.jpg', '.png')
+    :param extensions: tuple with file endings. e.g. ('.jpg', '.png'). Files with these endings will be added to img_paths
     :return: list of all filenames
     '''
 
@@ -58,7 +51,7 @@ def make_folder(directory):
         os.makedirs(directory)
 
 
-class SetParametersDialog(QWidget):
+class SetupWindow(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -67,7 +60,7 @@ class SetParametersDialog(QWidget):
         self.height = 800
 
         # state variables
-        self.selectedFolder = ''
+        self.selected_folder = ''
         self.num_labels = 0
         self.label_inputs = []
         self.label_headlines = []
@@ -101,7 +94,7 @@ class SetParametersDialog(QWidget):
         self.selectedFolderLabel.setGeometry(60, 76, 582, 26)
         self.selectedFolderLabel.setObjectName("selectedFolderLabel")
 
-        self.browse_button.move(self.width -60 - 100, 75)
+        self.browse_button.move(self.width - 60 - 100, 75)
         self.browse_button.clicked.connect(self.pick_new)
 
         # Create textbox
@@ -114,7 +107,7 @@ class SetParametersDialog(QWidget):
         self.next_button.move(360, 720)
         self.next_button.clicked.connect(self.continue_app)
 
-        self.error_message.setGeometry(20, 690, self.width-20, 20)
+        self.error_message.setGeometry(20, 690, self.width - 20, 20)
         self.error_message.setAlignment(Qt.AlignCenter)
         self.error_message.setStyleSheet('color: red')
 
@@ -131,8 +124,8 @@ class SetParametersDialog(QWidget):
         Centers the window on the screen.
         """
         resolution = QDesktopWidget().screenGeometry()
-        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
-                  (resolution.height() / 2) - (self.frameSize().height() / 2))
+        self.move(int((resolution.width() / 2) - (self.width / 2)),
+                  int((resolution.height() / 2) - (self.height / 2)))
 
     def pick_new(self):
         """
@@ -142,7 +135,7 @@ class SetParametersDialog(QWidget):
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
 
         self.selectedFolderLabel.setText(folder_path)
-        self.selectedFolder = folder_path
+        self.selected_folder = folder_path
 
     def generate_label_inputs(self):
         if self.numLabelsInput.text() != '':
@@ -162,7 +155,7 @@ class SetParametersDialog(QWidget):
             x_shift = 0  # variable that helps to compute x-coordinate of label in UI
             for i in range(self.num_labels):
                 self.label_inputs.append(QtWidgets.QLineEdit(self))
-                self.label_headlines.append(QLabel(f'label {i+1}:', self))
+                self.label_headlines.append(QLabel(f'label {i + 1}:', self))
 
                 label_input = self.label_inputs[i]
                 label = self.label_headlines[i]
@@ -181,7 +174,7 @@ class SetParametersDialog(QWidget):
                 label.show()
 
     def check_validity(self):
-        if self.selectedFolder == '':
+        if self.selected_folder == '':
             return False, 'Input folder has to be selected.'
 
         num_labels_input = self.numLabelsInput.text().strip()
@@ -196,15 +189,20 @@ class SetParametersDialog(QWidget):
 
     def continue_app(self):
         form_is_valid, message = self.check_validity()
+
         if form_is_valid:
+            label_values = []
+            for label in self.label_inputs:
+                label_values.append(label.text().strip())
+
             self.close()
-            App(labels, img_paths).show()
+            LabelerWindow(label_values, self.selected_folder).show()
         else:
             self.error_message.setText(message)
 
 
-class App(QWidget):
-    def __init__(self, labels, img_paths):
+class LabelerWindow(QWidget):
+    def __init__(self, labels, input_folder):
         super().__init__()
 
         # init UI state
@@ -218,10 +216,11 @@ class App(QWidget):
 
         # state variables
         self.counter = 0
-        self.img_paths = img_paths
+        self.input_folder = input_folder
+        self.img_paths = get_img_paths(input_folder)
         self.labels = labels
-        self.num_labels = len(labels)
-        self.num_images = len(img_paths)
+        self.num_labels = len(self.labels)
+        self.num_images = len(self.img_paths)
         self.assigned_labels = {}
 
         # initialize list to save all label buttons
@@ -270,7 +269,7 @@ class App(QWidget):
         self.image_box.setAlignment(Qt.AlignTop)
 
         # image name
-        self.img_name_label.setText(img_paths[self.counter])
+        self.img_name_label.setText(self.img_paths[self.counter])
 
         # progress bar
         self.progress_bar.setText(f'image 1 of {self.num_images}')
@@ -363,7 +362,7 @@ class App(QWidget):
             # If we have already assigned label to this image and mode is 'move', change the input path.
             # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
             if mode == 'move' and filename in self.assigned_labels.keys():
-                path = os.path.join(input_folder, self.assigned_labels[filename], filename)
+                path = os.path.join(self.input_folder, self.assigned_labels[filename], filename)
 
             self.set_image(path)
             self.img_name_label.setText(path)
@@ -391,7 +390,7 @@ class App(QWidget):
                 # If we have already assigned label to this image and mode is 'move', change the input path.
                 # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
                 if mode == 'move' and filename in self.assigned_labels.keys():
-                    path = os.path.join(input_folder, self.assigned_labels[filename], filename)
+                    path = os.path.join(self.input_folder, self.assigned_labels[filename], filename)
 
                 self.set_image(path)
                 self.img_name_label.setText(path)
@@ -418,7 +417,7 @@ class App(QWidget):
         Assigned label is represented as one-hot vector.
         :param out_filename: name of csv file to be generated
         """
-        path_to_save = os.path.join(input_folder, 'csv_ouput')
+        path_to_save = os.path.join(self.input_folder, 'csv_ouput')
         make_folder(path_to_save)
         with open(os.path.join(path_to_save, out_filename), "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
@@ -468,58 +467,53 @@ class App(QWidget):
         one_hot_arr[number] = 1
         return one_hot_arr
 
-    @staticmethod
-    def _copy_image(label, prev_label, file_path):
+    # @staticmethod
+    def _copy_image(self, label, prev_label, img_path):
         """
         Copies a file to a new label folder using the shutil library. The file will be copied into a
         subdirectory called label in the input folder.
         :param label: The label
-        :param file_path: Path of the original image
+        :param img_path: Path of the original image
         """
 
         # get image filename (e.g. img_1.jpg)
-        img_filename = os.path.split(file_path)[-1]
+        img_filename = os.path.split(img_path)[-1]
 
-        output_path = os.path.join(input_folder, label, img_filename)
+        output_path = os.path.join(self.input_folder, label, img_filename)
 
         # copy image to a new location
-        shutil.copy(file_path, output_path)
+        shutil.copy(img_path, output_path)
 
         # remove image from it's previous location if the image was labeled before
         if prev_label:
-            os.remove(os.path.join(input_folder, prev_label, img_filename))
+            os.remove(os.path.join(self.input_folder, prev_label, img_filename))
 
-    @staticmethod
-    def _move_image(label, prev_label, file_path):
+    # @staticmethod
+    def _move_image(self, label, prev_label, img_path):
         """
         Moves a file to a new label folder using the shutil library. The file will be moved into a
         subdirectory called label in the input folder.
         :param label: The label
-        :param file_path: Path of the original image
+        :param img_path: Path of the original image
         """
 
         # get image filename (e.g. img_1.jpg)
-        img_filename = os.path.split(file_path)[-1]
+        img_filename = os.path.split(img_path)[-1]
 
         # if the image was labeled before, it means it was moved to another directory (named as prev_label)
         # for that reason you have to change the path to the image file (= file_path)
         if prev_label:
-            file_path = os.path.join(input_folder, prev_label, img_filename)
+            img_path = os.path.join(self.input_folder, prev_label, img_filename)
 
-        output_path = os.path.join(input_folder, label, img_filename)
+        output_path = os.path.join(self.input_folder, label, img_filename)
 
         # move image to a new location
-        shutil.move(file_path, output_path)
+        shutil.move(img_path, output_path)
 
 
 if __name__ == '__main__':
-    # get paths to images in input_folder
-    img_paths = get_img_paths(input_folder, file_extensions)
 
-    # throw an exception when n files found
-    if len(img_paths) == 0:
-        raise Exception(f'No images found in {input_folder}')
-
+    input_folder = './data/images/'
     # create folders for each label if 'copy' or 'move' modes are selected
     if mode == 'copy' or mode == 'move':
         for label in labels:
@@ -527,6 +521,6 @@ if __name__ == '__main__':
 
     # run the application
     app = QApplication(sys.argv)
-    ex = SetParametersDialog()
+    ex = SetupWindow()
     ex.show()
     sys.exit(app.exec_())
