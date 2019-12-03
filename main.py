@@ -3,11 +3,11 @@ import os
 import shutil
 import sys
 
-import math
+from xlsxwriter.workbook import Workbook
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator, QPainter, QPen
+from PyQt5.QtGui import QPixmap, QIntValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton
 
@@ -294,7 +294,9 @@ class LabelerWindow(QWidget):
         self.progress_bar = QLabel(self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
-        self.show_next_check_box = QCheckBox("Automatically show next image when labeled", self)
+        self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
+        self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
+
 
         # create label folders
         if mode == 'copy' or mode == 'move':
@@ -302,7 +304,6 @@ class LabelerWindow(QWidget):
 
         # init UI
         self.init_ui()
-
 
     def init_ui(self):
 
@@ -313,9 +314,13 @@ class LabelerWindow(QWidget):
         # create buttons
         self.init_buttons()
 
-        # create checkbox
-        self.show_next_check_box.setChecked(True)
-        self.show_next_check_box.setGeometry(self.img_panel_width + 20, 10, 300, 20)
+        # create 'show next automatically' checkbox
+        self.show_next_checkbox.setChecked(True)
+        self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 300, 20)
+
+        # "create xlsx" checkbox
+        self.generate_xlsx_checkbox.setChecked(False)
+        self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image name label
         self.img_name_label.setGeometry(20, 40, self.img_panel_width, 20)
@@ -343,7 +348,7 @@ class LabelerWindow(QWidget):
 
         # draw line to for better UX
         ui_line = QLabel(self)
-        ui_line.setGeometry(20,98, 1012, 1)
+        ui_line.setGeometry(20, 98, 1012, 1)
         ui_line.setStyleSheet('background-color: black')
 
         # apply custom styles
@@ -369,7 +374,7 @@ class LabelerWindow(QWidget):
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
         next_im_btn.move(self.img_panel_width + 20, 600)
-        next_im_btn.clicked.connect(lambda state, filename='assigned_classes.csv': self.generate_csv(filename))
+        next_im_btn.clicked.connect(lambda state, filename='assigned_classes': self.generate_csv(filename))
         next_im_btn.setObjectName("blueButton")
 
         # Create button for each label
@@ -457,7 +462,7 @@ class LabelerWindow(QWidget):
                 shutil.move(img_path, copy_to)
 
         # load next image
-        if self.show_next_check_box.isChecked():
+        if self.show_next_checkbox.isChecked():
             self.show_next_image()
         else:
             self.set_button_color(img_name)
@@ -532,7 +537,9 @@ class LabelerWindow(QWidget):
         """
         path_to_save = os.path.join(self.input_folder, 'output')
         make_folder(path_to_save)
-        with open(os.path.join(path_to_save, out_filename), "w", newline='') as csv_file:
+        csv_file_path = os.path.join(path_to_save, out_filename) + '.csv'
+
+        with open(csv_file_path, "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
@@ -543,9 +550,31 @@ class LabelerWindow(QWidget):
                 labels_one_hot = self.labels_to_zero_one(labels)
                 writer.writerow([img_name] + list(labels_one_hot))
 
-        message = f'csv saved to: {os.path.abspath(os.path.join(path_to_save, out_filename))}'
+        message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
         print(message)
+
+        if self.generate_xlsx_checkbox.isChecked():
+            try:
+                self.csv_to_xlsx(csv_file_path)
+            except:
+                print('Generating xlsx file failed.')
+
+    def csv_to_xlsx(self, csv_file_path):
+        """
+        converts csv file to xlsx file
+        :param csv_file_path: path to csv file which we want to convert to lsx
+        """
+        workbook = Workbook(csv_file_path[:-4] + '.xlsx')
+        worksheet = workbook.add_worksheet()
+
+        with open(csv_file_path, 'rt', encoding='utf8') as f:
+            reader = csv.reader(f)
+            for r, row in enumerate(reader):
+                for c, col in enumerate(row):
+                    worksheet.write(r, c, col)
+
+        workbook.close()
 
     def set_button_color(self, filename):
         """
@@ -570,7 +599,7 @@ class LabelerWindow(QWidget):
         It automatically generates csv file in case the user forgot to do that
         """
         print("closing the App..")
-        self.generate_csv('assigned_classes_automatically_generated.csv')
+        self.generate_csv('assigned_classes_automatically_generated')
 
     def labels_to_zero_one(self, labels):
         """
