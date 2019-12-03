@@ -82,10 +82,10 @@ class SetupWindow(QWidget):
         self.headline_folder.setGeometry(60, 30, 500, 20)
         self.headline_folder.setObjectName("headline")
 
-        self.selected_folder_label.setGeometry(60, 61, 550, 26)
+        self.selected_folder_label.setGeometry(60, 60, 550, 26)
         self.selected_folder_label.setObjectName("selectedFolderLabel")
 
-        self.browse_button.move(600, 60)
+        self.browse_button.setGeometry(610, 60, 80, 26)
         self.browse_button.clicked.connect(self.pick_new)
 
         # Input number of labels
@@ -93,9 +93,9 @@ class SetupWindow(QWidget):
         self.headline_num_labels.move(60, top_margin_num_labels)
         self.headline_num_labels.setObjectName("headline")
 
-        self.numLabelsInput.setGeometry(60, top_margin_num_labels + 31, 60, 26)
+        self.numLabelsInput.setGeometry(60, top_margin_num_labels + 30, 60, 26)
         self.numLabelsInput.setValidator(self.onlyInt)
-        self.confirm_num_labels.move(118, top_margin_num_labels + 30)
+        self.confirm_num_labels.setGeometry(118, top_margin_num_labels + 30, 80, 26)
         self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
         # Next Button
