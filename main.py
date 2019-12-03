@@ -7,7 +7,7 @@ import math
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator
+from PyQt5.QtGui import QPixmap, QIntValidator, QPainter, QPen
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton
 
@@ -41,65 +41,69 @@ class SetupWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        # window variables
+        # Window variables
         self.width = 800
         self.height = 900
 
-        # state variables
+        # State variables
         self.selected_folder = ''
         self.num_labels = 0
         self.label_inputs = []
         self.label_headlines = []
-        self.mode = 'csv'
+        self.mode = 'csv'  # default option
 
-        # init UI components
-        self.headlineFolder = QLabel('1. Select folder containing images you want to label', self)
-        self.selectedFolderLabel = QLabel(self)
-        self.browse_button = QtWidgets.QPushButton("Browse", self)
-
-        self.headlineNumLabels = QLabel('3. How many unique labels do you want to assign?', self)
-        self.numLabelsInput = QLineEdit(self)
-        self.confirmNumLabels = QtWidgets.QPushButton("Set", self)
-        self.onlyInt = QIntValidator()
-
-        self.next_button = QtWidgets.QPushButton("Next", self)
-
-        self.headlineLabelInputs = QLabel(self)
-
+        # Labels
+        self.headline_folder = QLabel('1. Select folder containing images you want to label', self)
+        self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
+        self.headline_label_inputs = QLabel(self)  # don't show yet
+        self.selected_folder_label = QLabel(self)
         self.error_message = QLabel(self)
 
-        self.radio_buttons = []
+        # Buttons
+        self.browse_button = QtWidgets.QPushButton("Browse", self)
+        self.confirm_num_labels = QtWidgets.QPushButton("Set", self)
+        self.next_button = QtWidgets.QPushButton("Next", self)
 
-        self.initUI()
+        # Inputs
+        self.numLabelsInput = QLineEdit(self)
 
-    def initUI(self):
+        # Validation
+        self.onlyInt = QIntValidator()
+
+        # Init
+        self.init_ui()
+
+    def init_ui(self):
         # self.selectFolderDialog = QFileDialog.getExistingDirectory(self, 'Select directory')
         self.setWindowTitle('PyQt5 - Annotation tool - Parameters setup')
         self.setGeometry(0, 0, self.width, self.height)
         self.centerOnScreen()
 
-        self.headlineFolder.setGeometry(60, 30, 500, 20)
-        self.headlineFolder.setObjectName("headline")
+        self.headline_folder.setGeometry(60, 30, 500, 20)
+        self.headline_folder.setObjectName("headline")
 
-        self.selectedFolderLabel.setGeometry(60, 61, 550, 26)
-        self.selectedFolderLabel.setObjectName("selectedFolderLabel")
+        self.selected_folder_label.setGeometry(60, 61, 550, 26)
+        self.selected_folder_label.setObjectName("selectedFolderLabel")
 
         self.browse_button.move(600, 60)
         self.browse_button.clicked.connect(self.pick_new)
 
         # Input number of labels
         top_margin_num_labels = 260
-        self.headlineNumLabels.move(60, top_margin_num_labels)
-        self.headlineNumLabels.setObjectName("headline")
+        self.headline_num_labels.move(60, top_margin_num_labels)
+        self.headline_num_labels.setObjectName("headline")
 
         self.numLabelsInput.setGeometry(60, top_margin_num_labels + 31, 60, 26)
         self.numLabelsInput.setValidator(self.onlyInt)
-        self.confirmNumLabels.move(118, top_margin_num_labels + 30)
-        self.confirmNumLabels.clicked.connect(self.generate_label_inputs)
+        self.confirm_num_labels.move(118, top_margin_num_labels + 30)
+        self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
+        # Next Button
         self.next_button.move(360, 840)
         self.next_button.clicked.connect(self.continue_app)
+        self.next_button.setObjectName("blueButton")
 
+        # Erro message
         self.error_message.setGeometry(20, 810, self.width - 20, 20)
         self.error_message.setAlignment(Qt.AlignCenter)
         self.error_message.setStyleSheet('color: red; font-weight: bold')
@@ -115,6 +119,9 @@ class SetupWindow(QWidget):
             print("Can't load custom stylesheet.")
 
     def init_radio_buttons(self):
+        """
+        Creates section with mode selection
+        """
 
         top_margin = 115
         radio_label = QLabel('2. Select mode', self)
@@ -143,19 +150,12 @@ class SetupWindow(QWidget):
         radiobutton.move(60, top_margin + 95)
 
     def mode_changed(self):
+        """
+        Sets new mode (one of: csv, copy, move)
+        """
         radioButton = self.sender()
         if radioButton.isChecked():
             self.mode = radioButton.mode
-
-    def centerOnScreen(self):
-        """
-        Centers the window on the screen.
-        """
-        resolution = QDesktopWidget().screenGeometry()
-        # print(resolution.width())
-        print(int((resolution.height() / 2) - (self.height / 2)))
-        self.move(int((resolution.width() / 2) - (self.width / 2)),
-                  int((resolution.height() / 2) - (self.height / 2)) - 40)
 
     def pick_new(self):
         """
@@ -164,11 +164,18 @@ class SetupWindow(QWidget):
         dialog = QFileDialog()
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
 
-        self.selectedFolderLabel.setText(folder_path)
+        self.selected_folder_label.setText(folder_path)
         self.selected_folder = folder_path
 
     def generate_label_inputs(self):
-        if self.numLabelsInput.text() != '':
+        """
+        Generates input fields for labels. The layout depends on the number of labels.
+        """
+
+        # check that number of labels is not empty
+        if self.numLabelsInput.text().strip() != '':
+
+            # convert string (number of labels) to integer
             self.num_labels = int(self.numLabelsInput.text())
 
             # delete previously generated widgets
@@ -176,49 +183,72 @@ class SetupWindow(QWidget):
                 input.deleteLater()
                 headline.deleteLater()
 
+            # initialize values
             self.label_inputs = []
-            self.label_headlines = []
+            self.label_headlines = []  # labels to label input fields
 
-            self.headlineLabelInputs.setText('4. Fill in the labels and click "Next"')
-            self.headlineLabelInputs.setGeometry(60, 350, 300, 20)
-            self.headlineLabelInputs.setStyleSheet('font-weight: bold')
+            # show headline for this step
+            self.headline_label_inputs.setText('4. Fill in the labels and click "Next"')
+            self.headline_label_inputs.setGeometry(60, 350, 300, 20)
+            self.headline_label_inputs.setStyleSheet('font-weight: bold')
 
+            # diplsay input fields
             x_shift = 0  # variable that helps to compute x-coordinate of label in UI
             for i in range(self.num_labels):
+                # append widgets to lists
                 self.label_inputs.append(QtWidgets.QLineEdit(self))
                 self.label_headlines.append(QLabel(f'label {i + 1}:', self))
 
+                # select particular widget
                 label_input = self.label_inputs[i]
                 label = self.label_headlines[i]
 
-                # place button in GUI (create multiple columns if there is more than 10 button)
+                # place widget in GUI (create multiple columns if there is more than 10 button)
                 y_shift = (30 + 10) * (i % 10)
                 if i != 0 and i % 10 == 0:
                     x_shift += 240
                     y_shift = 0
 
-                # place input and labels
+                # place input and labels in GUI
                 label_input.setGeometry(60 + 60 + x_shift, y_shift + 395, 120, 26)
                 label.setGeometry(60 + x_shift, y_shift + 395, 60, 26)
 
+                # show widgets
                 label_input.show()
                 label.show()
 
+    def centerOnScreen(self):
+        """
+        Centers the window on the screen.
+        """
+        resolution = QDesktopWidget().screenGeometry()
+        self.move(int((resolution.width() / 2) - (self.width / 2)),
+                  int((resolution.height() / 2) - (self.height / 2)) - 40)
+
     def check_validity(self):
+        """
+        :return: if all the necessary information is provided for proper run of application. And error message
+        """
         if self.selected_folder == '':
-            return False, 'Input folder has to be selected.'
+            return False, 'Input folder has to be selected (step 1)'
 
         num_labels_input = self.numLabelsInput.text().strip()
         if num_labels_input == '' or num_labels_input == '0':
-            return False, 'Number of labels has to be number greater than 0.'
+            return False, 'Number of labels has to be number greater than 0 (step 3).'
+
+        if len(self.label_inputs) == 0:
+            return False, "You didn't provide any labels. Select number of labels and press \"Set\""
 
         for label in self.label_inputs:
             if label.text().strip() == '':
-                return False, 'All label fields has to be filled.'
+                return False, 'All label fields has to be filled (step 4).'
 
         return True, 'Form ok'
 
     def continue_app(self):
+        """
+        If the setup form is valid, the LabelerWindow is opened and all necessary information is passed to it
+        """
         form_is_valid, message = self.check_validity()
 
         if form_is_valid:
@@ -239,7 +269,7 @@ class LabelerWindow(QWidget):
         # init UI state
         self.title = 'PyQt5 - Annotation tool for assigning image classes'
         self.left = 200
-        self.top = 200
+        self.top = 100
         self.width = 1420
         self.height = 760
         self.img_panel_width = 800
@@ -264,33 +294,34 @@ class LabelerWindow(QWidget):
         self.progress_bar = QLabel(self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
-        self.showNextCheckBox = QCheckBox("Automatically show next image when labeled", self)
+        self.show_next_check_box = QCheckBox("Automatically show next image when labeled", self)
 
         # create label folders
         if mode == 'copy' or mode == 'move':
             self.create_label_folders(labels, self.input_folder)
 
         # init UI
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self):
+
+    def init_ui(self):
 
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
         # self.selectFolderDialog.setGeometry(20, 800, 300, 20)
         # create buttons
-        self.initButtons()
+        self.init_buttons()
 
         # create checkbox
-        self.showNextCheckBox.setChecked(True)
-        self.showNextCheckBox.setGeometry(300, 64, 300, 20)
+        self.show_next_check_box.setChecked(True)
+        self.show_next_check_box.setGeometry(self.img_panel_width + 20, 10, 300, 20)
 
         # image name label
-        self.img_name_label.setGeometry(20, 10, self.img_panel_width, 20)
+        self.img_name_label.setGeometry(20, 40, self.img_panel_width, 20)
 
         # progress bar (how many images have I labeled so far)
-        self.progress_bar.setGeometry(20, 30, self.img_panel_width, 20)
+        self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
 
         # csv note
         self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
@@ -301,7 +332,7 @@ class LabelerWindow(QWidget):
 
         # show image
         self.set_image(self.img_paths[0])
-        self.image_box.setGeometry(20, 100, self.img_panel_width, self.img_panel_height)
+        self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
         self.image_box.setAlignment(Qt.AlignTop)
 
         # image name
@@ -309,6 +340,11 @@ class LabelerWindow(QWidget):
 
         # progress bar
         self.progress_bar.setText(f'image 1 of {self.num_images}')
+
+        # draw line to for better UX
+        ui_line = QLabel(self)
+        ui_line.setGeometry(20,98, 1012, 1)
+        ui_line.setStyleSheet('background-color: black')
 
         # apply custom styles
         try:
@@ -318,24 +354,23 @@ class LabelerWindow(QWidget):
         except:
             print("Can't load custom stylesheet.")
 
-    def initButtons(self):
-
-        num_columns = int(math.ceil(self.num_labels / 10))
+    def init_buttons(self):
 
         # Add "Prev Image" and "Next Image" buttons
+        next_prev_top_margin = 50
         prev_im_btn = QtWidgets.QPushButton("Prev", self)
-        prev_im_btn.move(20, 60)
+        prev_im_btn.move(self.img_panel_width + 20, next_prev_top_margin)
         prev_im_btn.clicked.connect(self.show_prev_image)
 
         next_im_btn = QtWidgets.QPushButton("Next", self)
-        next_im_btn.move(130, 60)
+        next_im_btn.move(self.img_panel_width + 140, next_prev_top_margin)
         next_im_btn.clicked.connect(self.show_next_image)
 
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
         next_im_btn.move(self.img_panel_width + 20, 600)
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes.csv': self.generate_csv(filename))
-        next_im_btn.setObjectName("generateCsvButton")
+        next_im_btn.setObjectName("blueButton")
 
         # Create button for each label
         x_shift = 0  # variable that helps to compute x-coordinate of button in UI
@@ -353,7 +388,7 @@ class LabelerWindow(QWidget):
                 x_shift += 120
                 y_shift = 0
 
-            button.move(self.img_panel_width + 20 + x_shift, y_shift + 100)
+            button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
 
     def set_label(self, label):
         """
@@ -422,7 +457,7 @@ class LabelerWindow(QWidget):
                 shutil.move(img_path, copy_to)
 
         # load next image
-        if self.showNextCheckBox.isChecked():
+        if self.show_next_check_box.isChecked():
             self.show_next_image()
         else:
             self.set_button_color(img_name)
