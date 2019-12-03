@@ -3,13 +3,13 @@ import os
 import shutil
 import sys
 
-from xlsxwriter.workbook import Workbook
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QIntValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton
+from xlsxwriter.workbook import Workbook
 
 
 def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
@@ -292,6 +292,7 @@ class LabelerWindow(QWidget):
         self.image_box = QLabel(self)
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
+        self.curr_image_headline = QLabel('Current image', self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
@@ -310,7 +311,6 @@ class LabelerWindow(QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        # self.selectFolderDialog.setGeometry(20, 800, 300, 20)
         # create buttons
         self.init_buttons()
 
@@ -321,6 +321,10 @@ class LabelerWindow(QWidget):
         # "create xlsx" checkbox
         self.generate_xlsx_checkbox.setChecked(False)
         self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
+
+        # image headline
+        self.curr_image_headline.setGeometry(20, 10, 300, 20)
+        self.curr_image_headline.setObjectName('headline')
 
         # image name label
         self.img_name_label.setGeometry(20, 40, self.img_panel_width, 20)
