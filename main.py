@@ -9,20 +9,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QIntValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
-    QInputDialog
-
-# ======================================================================
-# SET THESE PARAMETERS AND RUN main.py SCRIPT
-
-# select one of the following modes: copy, move, none
-# 1. copy: Creates folder for each label. Labeled images are copied to these folders
-# 2. move: Creates folder for each label. Labeled images are moved to these folders
-# 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'csv'  # 'copy', 'move', 'csv'
-
-
-# ======================================================================
-
+    QRadioButton
 
 
 def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
@@ -56,20 +43,21 @@ class SetupWindow(QWidget):
 
         # window variables
         self.width = 800
-        self.height = 800
+        self.height = 900
 
         # state variables
         self.selected_folder = ''
         self.num_labels = 0
         self.label_inputs = []
         self.label_headlines = []
+        self.mode = 'csv'
 
         # init UI components
-        self.headlineFolder = QLabel('1. Select folder with images you want to label', self)
+        self.headlineFolder = QLabel('1. Select folder containing images you want to label', self)
         self.selectedFolderLabel = QLabel(self)
         self.browse_button = QtWidgets.QPushButton("Browse", self)
 
-        self.headlineNumLabels = QLabel('2. How many unique labels do you want to assign?', self)
+        self.headlineNumLabels = QLabel('3. How many unique labels do you want to assign?', self)
         self.numLabelsInput = QLineEdit(self)
         self.confirmNumLabels = QtWidgets.QPushButton("Set", self)
         self.onlyInt = QIntValidator()
@@ -80,6 +68,8 @@ class SetupWindow(QWidget):
 
         self.error_message = QLabel(self)
 
+        self.radio_buttons = []
+
         self.initUI()
 
     def initUI(self):
@@ -88,27 +78,33 @@ class SetupWindow(QWidget):
         self.setGeometry(0, 0, self.width, self.height)
         self.centerOnScreen()
 
-        self.headlineFolder.setGeometry(60, 40, 300, 20)
+        self.headlineFolder.setGeometry(60, 30, 500, 20)
+        self.headlineFolder.setObjectName("headline")
 
-        self.selectedFolderLabel.setGeometry(60, 76, 582, 26)
+        self.selectedFolderLabel.setGeometry(60, 61, 550, 26)
         self.selectedFolderLabel.setObjectName("selectedFolderLabel")
 
-        self.browse_button.move(self.width - 60 - 100, 75)
+        self.browse_button.move(600, 60)
         self.browse_button.clicked.connect(self.pick_new)
 
-        # Create textbox
-        self.headlineNumLabels.move(60, 140)
-        self.numLabelsInput.setGeometry(60, 171, 60, 26)
+        # Input number of labels
+        top_margin_num_labels = 260
+        self.headlineNumLabels.move(60, top_margin_num_labels)
+        self.headlineNumLabels.setObjectName("headline")
+
+        self.numLabelsInput.setGeometry(60, top_margin_num_labels + 31, 60, 26)
         self.numLabelsInput.setValidator(self.onlyInt)
-        self.confirmNumLabels.move(118, 170)
+        self.confirmNumLabels.move(118, top_margin_num_labels + 30)
         self.confirmNumLabels.clicked.connect(self.generate_label_inputs)
 
-        self.next_button.move(360, 720)
+        self.next_button.move(360, 840)
         self.next_button.clicked.connect(self.continue_app)
 
-        self.error_message.setGeometry(20, 690, self.width - 20, 20)
+        self.error_message.setGeometry(20, 810, self.width - 20, 20)
         self.error_message.setAlignment(Qt.AlignCenter)
-        self.error_message.setStyleSheet('color: red')
+        self.error_message.setStyleSheet('color: red; font-weight: bold')
+
+        self.init_radio_buttons()
 
         # apply custom styles
         try:
@@ -118,13 +114,48 @@ class SetupWindow(QWidget):
         except:
             print("Can't load custom stylesheet.")
 
+    def init_radio_buttons(self):
+
+        top_margin = 115
+        radio_label = QLabel('2. Select mode', self)
+        radio_label.setObjectName("headline")
+        radio_label.move(60, top_margin)
+
+        radiobutton = QRadioButton(
+            "csv (Images in selected folder are labeled and then csv file with assigned labels is generated.)", self)
+        radiobutton.setChecked(True)
+        radiobutton.mode = "csv"
+        radiobutton.toggled.connect(self.mode_changed)
+        radiobutton.move(60, top_margin + 35)
+
+        radiobutton = QRadioButton(
+            "copy (Creates folder for each label. Labeled images are copied to these folders. Csv is also generated)",
+            self)
+        radiobutton.mode = "copy"
+        radiobutton.toggled.connect(self.mode_changed)
+        radiobutton.move(60, top_margin + 65)
+
+        radiobutton = QRadioButton(
+            "move (Creates folder for each label. Labeled images are moved to these folders. Csv is also generated)",
+            self)
+        radiobutton.mode = "move"
+        radiobutton.toggled.connect(self.mode_changed)
+        radiobutton.move(60, top_margin + 95)
+
+    def mode_changed(self):
+        radioButton = self.sender()
+        if radioButton.isChecked():
+            self.mode = radioButton.mode
+
     def centerOnScreen(self):
         """
         Centers the window on the screen.
         """
         resolution = QDesktopWidget().screenGeometry()
+        # print(resolution.width())
+        print(int((resolution.height() / 2) - (self.height / 2)))
         self.move(int((resolution.width() / 2) - (self.width / 2)),
-                  int((resolution.height() / 2) - (self.height / 2)))
+                  int((resolution.height() / 2) - (self.height / 2)) - 40)
 
     def pick_new(self):
         """
@@ -148,8 +179,9 @@ class SetupWindow(QWidget):
             self.label_inputs = []
             self.label_headlines = []
 
-            self.headlineLabelInputs.setText('3. Fill in the labels and click "Next"')
-            self.headlineLabelInputs.setGeometry(60, 230, 300, 20)
+            self.headlineLabelInputs.setText('4. Fill in the labels and click "Next"')
+            self.headlineLabelInputs.setGeometry(60, 350, 300, 20)
+            self.headlineLabelInputs.setStyleSheet('font-weight: bold')
 
             x_shift = 0  # variable that helps to compute x-coordinate of label in UI
             for i in range(self.num_labels):
@@ -166,8 +198,8 @@ class SetupWindow(QWidget):
                     y_shift = 0
 
                 # place input and labels
-                label_input.setGeometry(60 + 60 + x_shift, y_shift + 280, 120, 26)
-                label.setGeometry(60 + x_shift, y_shift + 280, 60, 26)
+                label_input.setGeometry(60 + 60 + x_shift, y_shift + 395, 120, 26)
+                label.setGeometry(60 + x_shift, y_shift + 395, 60, 26)
 
                 label_input.show()
                 label.show()
@@ -195,20 +227,20 @@ class SetupWindow(QWidget):
                 label_values.append(label.text().strip())
 
             self.close()
-            LabelerWindow(label_values, self.selected_folder).show()
+            LabelerWindow(label_values, self.selected_folder, self.mode).show()
         else:
             self.error_message.setText(message)
 
 
 class LabelerWindow(QWidget):
-    def __init__(self, labels, input_folder):
+    def __init__(self, labels, input_folder, mode):
         super().__init__()
 
         # init UI state
         self.title = 'PyQt5 - Annotation tool for assigning image classes'
         self.left = 200
         self.top = 200
-        self.width = 1220
+        self.width = 1420
         self.height = 760
         self.img_panel_width = 800
         self.img_panel_height = 750
@@ -221,6 +253,7 @@ class LabelerWindow(QWidget):
         self.num_labels = len(self.labels)
         self.num_images = len(self.img_paths)
         self.assigned_labels = {}
+        self.mode = mode
 
         # initialize list to save all label buttons
         self.label_buttons = []
@@ -236,7 +269,6 @@ class LabelerWindow(QWidget):
         # create label folders
         if mode == 'copy' or mode == 'move':
             self.create_label_folders(labels, self.input_folder)
-
 
         # init UI
         self.initUI()
@@ -333,7 +365,6 @@ class LabelerWindow(QWidget):
         img_path = self.img_paths[self.counter]
         img_name = os.path.split(img_path)[-1]
 
-
         # if the img has some label already
         if img_name in self.assigned_labels.keys():
 
@@ -346,10 +377,10 @@ class LabelerWindow(QWidget):
                     self.assigned_labels.pop(img_name, None)
 
                 # remove image from appropriate folder
-                if mode == 'copy':
+                if self.mode == 'copy':
                     os.remove(os.path.join(self.input_folder, label, img_name))
 
-                elif mode == 'move':
+                elif self.mode == 'move':
                     # label was in assigned labels, so I want to remove it from label folder,
                     # but this was the last label, so move the image to input folder.
                     # Don't remove it, because it it not save anywehre else
@@ -368,11 +399,11 @@ class LabelerWindow(QWidget):
                 copy_to = os.path.join(self.input_folder, label)
 
                 # copy/move the image into appropriate label folder
-                if mode == 'copy':
+                if self.mode == 'copy':
                     # the image is stored in input_folder, so i can copy it from there (differs from 'move' option)
                     shutil.copy(img_path, copy_to)
 
-                elif mode == 'move':
+                elif self.mode == 'move':
                     # the image doesn't have to be stored in input_folder anymore.
                     # get the path where the image is stored
                     copy_from = os.path.join(self.input_folder, self.assigned_labels[img_name][0], img_name)
@@ -385,11 +416,10 @@ class LabelerWindow(QWidget):
             # move copy images to appropriate directories
             copy_to = os.path.join(self.input_folder, label)
 
-            if mode == 'copy':
+            if self.mode == 'copy':
                 shutil.copy(img_path, copy_to)
-            elif mode == 'move':
+            elif self.mode == 'move':
                 shutil.move(img_path, copy_to)
-
 
         # load next image
         if self.showNextCheckBox.isChecked():
@@ -409,7 +439,7 @@ class LabelerWindow(QWidget):
 
             # If we have already assigned label to this image and mode is 'move', change the input path.
             # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
-            if mode == 'move' and filename in self.assigned_labels.keys():
+            if self.mode == 'move' and filename in self.assigned_labels.keys():
                 path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
             self.set_image(path)
@@ -437,7 +467,7 @@ class LabelerWindow(QWidget):
 
                 # If we have already assigned label to this image and mode is 'move', change the input path.
                 # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
-                if mode == 'move' and filename in self.assigned_labels.keys():
+                if self.mode == 'move' and filename in self.assigned_labels.keys():
                     path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
                 self.set_image(path)
@@ -482,7 +512,6 @@ class LabelerWindow(QWidget):
         self.csv_generated_message.setText(message)
         print(message)
 
-
     def set_button_color(self, filename):
         """
         changes color of button which corresponds to selected label
@@ -499,7 +528,6 @@ class LabelerWindow(QWidget):
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
             else:
                 button.setStyleSheet('background-color: None')
-
 
     def closeEvent(self, event):
         """
@@ -534,8 +562,6 @@ class LabelerWindow(QWidget):
 
 
 if __name__ == '__main__':
-
-
     # run the application
     app = QApplication(sys.argv)
     ex = SetupWindow()
