@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialo
 # 1. copy: Creates folder for each label. Labeled images are copied to these folders
 # 2. move: Creates folder for each label. Labeled images are moved to these folders
 # 3. csv: Images in input_folder are just labeled and then csv file with assigned labels is generated
-mode = 'move'  # 'copy', 'move', 'csv'
+mode = 'csv'  # 'copy', 'move', 'csv'
 
 
 # ======================================================================
@@ -235,7 +235,8 @@ class LabelerWindow(QWidget):
 
         # create label folders
         if mode == 'copy' or mode == 'move':
-            self.create_label_folders(labels)
+            self.create_label_folders(labels, self.input_folder)
+
 
         # init UI
         self.initUI()
@@ -464,7 +465,7 @@ class LabelerWindow(QWidget):
         Assigned label is represented as one-hot vector.
         :param out_filename: name of csv file to be generated
         """
-        path_to_save = os.path.join(self.input_folder, 'csv_ouput')
+        path_to_save = os.path.join(self.input_folder, 'output')
         make_folder(path_to_save)
         with open(os.path.join(path_to_save, out_filename), "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
@@ -473,13 +474,14 @@ class LabelerWindow(QWidget):
             writer.writerow(['img'] + self.labels)
 
             # write one-hot labels
-            for img_name, label in self.assigned_labels.items():
-                label_one_hot = self.__number_to_one_hot(self.labels.index(label), self.num_labels)
-                writer.writerow([img_name] + list(label_one_hot))
+            for img_name, labels in self.assigned_labels.items():
+                labels_one_hot = self.labels_to_zero_one(labels)
+                writer.writerow([img_name] + list(labels_one_hot))
 
         message = f'csv saved to: {os.path.abspath(os.path.join(path_to_save, out_filename))}'
         self.csv_generated_message.setText(message)
         print(message)
+
 
     def set_button_color(self, filename):
         """
@@ -507,31 +509,32 @@ class LabelerWindow(QWidget):
         print("closing the App..")
         self.generate_csv('assigned_classes_automatically_generated.csv')
 
-    @staticmethod
-    def __number_to_one_hot(number, num_classes):
+    def labels_to_zero_one(self, labels):
         """
         Convert number to one-hot vector
         :param number: number which represents for example class index
         :param num_classes: number of classes in dataset so I know how long the vector should be
         :return:
         """
-        one_hot_arr = np.zeros([num_classes], dtype=int)
-        one_hot_arr[number] = 1
-        return one_hot_arr
+
+        # create mapping from label name to its index for better efficiency {label : int}
+        label_to_int = dict((c, i) for i, c in enumerate(self.labels))
+
+        # initialize array to save selected labels
+        zero_one_arr = np.zeros([self.num_labels], dtype=int)
+        for label in labels:
+            zero_one_arr[label_to_int[label]] = 1
+
+        return zero_one_arr
 
     @staticmethod
-    def create_label_folders(labels):
+    def create_label_folders(labels, folder):
         for label in labels:
-            make_folder(os.path.join(input_folder, label))
+            make_folder(os.path.join(folder, label))
 
 
 if __name__ == '__main__':
 
-    input_folder = './data/images/'
-    # create folders for each label if 'copy' or 'move' modes are selected
-    # if mode == 'copy' or mode == 'move':
-    #     for label in labels:
-    #         make_folder(os.path.join(input_folder, label))
 
     # run the application
     app = QApplication(sys.argv)
