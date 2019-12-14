@@ -21,7 +21,8 @@ HOW TO USE IT?
 1. Download main.py file
 2. You can also download styles.qss file and save it to the same directory as main.py file.
    This step is not required, but recommended - application will work without file styles.qss.
-3. Run main.py and GUI with instructions should appear.
+3. install packages mentioned in REQUIREMENTS section.  
+4. Run main.py and GUI with instructions should appear.
 
 -------------------------------------------------------------------------------------------------------------
 

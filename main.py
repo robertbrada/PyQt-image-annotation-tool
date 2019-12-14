@@ -43,10 +43,11 @@ class SetupWindow(QWidget):
 
         # Window variables
         self.width = 800
-        self.height = 900
+        self.height = 940
 
         # State variables
         self.selected_folder = ''
+        self.selected_labels = ''
         self.num_labels = 0
         self.label_inputs = []
         self.label_headlines = []
@@ -54,15 +55,22 @@ class SetupWindow(QWidget):
 
         # Labels
         self.headline_folder = QLabel('1. Select folder containing images you want to label', self)
-        self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
+        self.headline_num_labels = QLabel('3. Specify labels', self)
+        self.labels_file_description = QLabel('a) select file with labels (text file containing one label on each line)', self)
+        self.labels_inputs_description = QLabel('b) or specify how many unique labels you want to assign', self)
+
+        # self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
+
         self.headline_label_inputs = QLabel(self)  # don't show yet
         self.selected_folder_label = QLabel(self)
         self.error_message = QLabel(self)
 
         # Buttons
         self.browse_button = QtWidgets.QPushButton("Browse", self)
-        self.confirm_num_labels = QtWidgets.QPushButton("Set", self)
+        self.confirm_num_labels = QtWidgets.QPushButton("Ok", self)
         self.next_button = QtWidgets.QPushButton("Next", self)
+        self.browse_labels_button = QtWidgets.QPushButton("Select labels", self)
+
 
         # Inputs
         self.numLabelsInput = QLineEdit(self)
@@ -85,21 +93,33 @@ class SetupWindow(QWidget):
         self.selected_folder_label.setGeometry(60, 60, 550, 26)
         self.selected_folder_label.setObjectName("selectedFolderLabel")
 
-        self.browse_button.setGeometry(610, 60, 80, 26)
+        self.browse_button.setGeometry(611, 59, 80, 28)
         self.browse_button.clicked.connect(self.pick_new)
+
 
         # Input number of labels
         top_margin_num_labels = 260
         self.headline_num_labels.move(60, top_margin_num_labels)
         self.headline_num_labels.setObjectName("headline")
 
-        self.numLabelsInput.setGeometry(60, top_margin_num_labels + 30, 60, 26)
+        self.labels_file_description.move(60, top_margin_num_labels + 30)
+        # self.browse_labels_button.setGeometry(60, top_margin_num_labels + 60, 80, 28)
+        self.browse_labels_button.setGeometry(460, top_margin_num_labels + 25, 89, 28)
+
+        self.browse_labels_button.clicked.connect(self.pick_labels_file)
+
+
+        # self.labels_inputs_description.move(60, top_margin_num_labels + 100)
+        self.labels_inputs_description.move(60, top_margin_num_labels + 60)
+        # self.numLabelsInput.setGeometry(60, top_margin_num_labels + 130, 60, 26)
+        self.numLabelsInput.setGeometry(75, top_margin_num_labels + 90, 60, 26)
+
         self.numLabelsInput.setValidator(self.onlyInt)
-        self.confirm_num_labels.setGeometry(118, top_margin_num_labels + 30, 80, 26)
+        self.confirm_num_labels.setGeometry(136, top_margin_num_labels + 89, 80, 28)
         self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
         # Next Button
-        self.next_button.move(360, 840)
+        self.next_button.move(360, 880)
         self.next_button.clicked.connect(self.continue_app)
         self.next_button.setObjectName("blueButton")
 
@@ -167,6 +187,26 @@ class SetupWindow(QWidget):
         self.selected_folder_label.setText(folder_path)
         self.selected_folder = folder_path
 
+    def pick_labels_file(self):
+        options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "Select labels", "",
+                                                  "Text files (*.txt)", options=options)
+        if fileName:
+            with open(fileName) as f:
+                content = f.readlines()
+
+            labels = [line.rstrip('\n') for line in content]
+
+            print(labels)
+            self.numLabelsInput.setText(str(len(labels)))
+            self.generate_label_inputs()
+
+            # fill the input fileds with loaded labels
+            for input, label in zip(self.label_inputs, labels):
+                input.setText(label)
+
+
     def generate_label_inputs(self):
         """
         Generates input fields for labels. The layout depends on the number of labels.
@@ -174,6 +214,7 @@ class SetupWindow(QWidget):
 
         # check that number of labels is not empty
         if self.numLabelsInput.text().strip() != '':
+
 
             # convert string (number of labels) to integer
             self.num_labels = int(self.numLabelsInput.text())
@@ -188,8 +229,9 @@ class SetupWindow(QWidget):
             self.label_headlines = []  # labels to label input fields
 
             # show headline for this step
+            margin_top = 400
             self.headline_label_inputs.setText('4. Fill in the labels and click "Next"')
-            self.headline_label_inputs.setGeometry(60, 350, 300, 20)
+            self.headline_label_inputs.setGeometry(60, margin_top, 300, 20)
             self.headline_label_inputs.setStyleSheet('font-weight: bold')
 
             # diplsay input fields
@@ -210,8 +252,8 @@ class SetupWindow(QWidget):
                     y_shift = 0
 
                 # place input and labels in GUI
-                label_input.setGeometry(60 + 60 + x_shift, y_shift + 395, 120, 26)
-                label.setGeometry(60 + x_shift, y_shift + 395, 60, 26)
+                label_input.setGeometry(60 + 60 + x_shift, y_shift + margin_top + 45, 120, 26)
+                label.setGeometry(60 + x_shift, y_shift + margin_top + 45, 60, 26)
 
                 # show widgets
                 label_input.show()
@@ -237,7 +279,7 @@ class SetupWindow(QWidget):
             return False, 'Number of labels has to be number greater than 0 (step 3).'
 
         if len(self.label_inputs) == 0:
-            return False, "You didn't provide any labels. Select number of labels and press \"Set\""
+            return False, "You didn't provide any labels. Select number of labels and press \"Ok\""
 
         for label in self.label_inputs:
             if label.text().strip() == '':
@@ -315,7 +357,7 @@ class LabelerWindow(QWidget):
         self.init_buttons()
 
         # create 'show next automatically' checkbox
-        self.show_next_checkbox.setChecked(True)
+        self.show_next_checkbox.setChecked(False)
         self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 300, 20)
 
         # "create xlsx" checkbox
