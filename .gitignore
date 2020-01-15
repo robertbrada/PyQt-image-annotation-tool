@@ -3,6 +3,7 @@
 .idea/
 data/
 out/
+paper/
 
 *.log
 *.out

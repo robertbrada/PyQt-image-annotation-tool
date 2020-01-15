@@ -56,7 +56,8 @@ class SetupWindow(QWidget):
         # Labels
         self.headline_folder = QLabel('1. Select folder containing images you want to label', self)
         self.headline_num_labels = QLabel('3. Specify labels', self)
-        self.labels_file_description = QLabel('a) select file with labels (text file containing one label on each line)', self)
+        self.labels_file_description = QLabel(
+            'a) select file with labels (text file containing one label on each line)', self)
         self.labels_inputs_description = QLabel('b) or specify how many unique labels you want to assign', self)
 
         # self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
@@ -70,7 +71,6 @@ class SetupWindow(QWidget):
         self.confirm_num_labels = QtWidgets.QPushButton("Ok", self)
         self.next_button = QtWidgets.QPushButton("Next", self)
         self.browse_labels_button = QtWidgets.QPushButton("Select labels", self)
-
 
         # Inputs
         self.numLabelsInput = QLineEdit(self)
@@ -96,7 +96,6 @@ class SetupWindow(QWidget):
         self.browse_button.setGeometry(611, 59, 80, 28)
         self.browse_button.clicked.connect(self.pick_new)
 
-
         # Input number of labels
         top_margin_num_labels = 260
         self.headline_num_labels.move(60, top_margin_num_labels)
@@ -107,7 +106,6 @@ class SetupWindow(QWidget):
         self.browse_labels_button.setGeometry(460, top_margin_num_labels + 25, 89, 28)
 
         self.browse_labels_button.clicked.connect(self.pick_labels_file)
-
 
         # self.labels_inputs_description.move(60, top_margin_num_labels + 100)
         self.labels_inputs_description.move(60, top_margin_num_labels + 60)
@@ -206,7 +204,6 @@ class SetupWindow(QWidget):
             for input, label in zip(self.label_inputs, labels):
                 input.setText(label)
 
-
     def generate_label_inputs(self):
         """
         Generates input fields for labels. The layout depends on the number of labels.
@@ -214,7 +211,6 @@ class SetupWindow(QWidget):
 
         # check that number of labels is not empty
         if self.numLabelsInput.text().strip() != '':
-
 
             # convert string (number of labels) to integer
             self.num_labels = int(self.numLabelsInput.text())
@@ -299,7 +295,8 @@ class SetupWindow(QWidget):
                 label_values.append(label.text().strip())
 
             self.close()
-            LabelerWindow(label_values, self.selected_folder, self.mode).show()
+            # show window in full-screen mode (window is maximized)
+            LabelerWindow(label_values, self.selected_folder, self.mode).showMaximized()
         else:
             self.error_message.setText(message)
 
@@ -312,10 +309,11 @@ class LabelerWindow(QWidget):
         self.title = 'PyQt5 - Annotation tool for assigning image classes'
         self.left = 200
         self.top = 100
-        self.width = 1420
-        self.height = 760
-        self.img_panel_width = 800
-        self.img_panel_height = 750
+        self.width = 1100
+        self.height = 770
+        # img panal size should be square-like to prevent some problems with different aspect ratios
+        self.img_panel_width = 650
+        self.img_panel_height = 650
 
         # state variables
         self.counter = 0
@@ -340,7 +338,6 @@ class LabelerWindow(QWidget):
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
         self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
 
-
         # create label folders
         if mode == 'copy' or mode == 'move':
             self.create_label_folders(labels, self.input_folder)
@@ -351,7 +348,8 @@ class LabelerWindow(QWidget):
     def init_ui(self):
 
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
+        # self.setGeometry(self.left, self.top, self.width, self.height) # initial dimension of the window
+        self.setMinimumSize(self.width, self.height)  # minimum size of the window
 
         # create buttons
         self.init_buttons()
@@ -569,9 +567,19 @@ class LabelerWindow(QWidget):
         :param path: relative path to the image that should be show
         """
 
-        # create pixmap and scale it appropriately, so that images stay in the dedicated area no matter the resolution
-        pixmap = QPixmap(path).scaled(self.img_panel_height, self.img_panel_width, Qt.KeepAspectRatio,
-                                      Qt.FastTransformation)
+        pixmap = QPixmap(path)
+
+        # get original image dimensions
+        img_width = pixmap.width()
+        img_height = pixmap.height()
+
+        # scale the image properly so it fits into the image window ()
+        margin = 20
+        if img_width >= img_height:
+            pixmap = pixmap.scaledToWidth(self.img_panel_width - margin)
+
+        else:
+            pixmap = pixmap.scaledToHeight(self.img_panel_height - margin)
 
         self.image_box.setPixmap(pixmap)
 
