@@ -34,5 +34,11 @@ Code is written in Python 3.7.4 using following external libraries:
 - PyQt 5.9.2
 - XlsxWriter 1.2.6
 
+-------------------------------------------------------------------------------------------------------------
 
+KEYBOARD SHORTCUTS
+
+N: Next image
+P: Previous image
+1-9: Select label
 
