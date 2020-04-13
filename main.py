@@ -6,9 +6,9 @@ import sys
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator
+from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
-    QRadioButton
+    QRadioButton, QShortcut
 from xlsxwriter.workbook import Workbook
 
 
@@ -415,6 +415,13 @@ class LabelerWindow(QWidget):
         next_im_btn.move(self.img_panel_width + 140, next_prev_top_margin)
         next_im_btn.clicked.connect(self.show_next_image)
 
+        # Add "Prev Image" and "Next Image" keyboard shortcuts
+        prev_im_kbs = QShortcut(QKeySequence("p"), self)
+        prev_im_kbs.activated.connect(self.show_prev_image)
+
+        next_im_kbs = QShortcut(QKeySequence("n"), self)
+        next_im_kbs.activated.connect(self.show_next_image)
+
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
         next_im_btn.move(self.img_panel_width + 20, 600)
@@ -430,6 +437,11 @@ class LabelerWindow(QWidget):
             # create click event (set label)
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
             button.clicked.connect(lambda state, x=label: self.set_label(x))
+
+            # create keyboard shortcut event (set label)
+            # shortcuts start getting overwritten when number of labels >9
+            label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+            label_kbs.activated.connect(lambda x=label: self.set_label(x))
 
             # place button in GUI (create multiple columns if there is more than 10 button)
             y_shift = (30 + 10) * (i % 10)
