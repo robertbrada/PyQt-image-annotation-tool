@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
-    QRadioButton, QShortcut
+    QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
 
 
@@ -62,7 +62,6 @@ class SetupWindow(QWidget):
 
         # self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
 
-        self.headline_label_inputs = QLabel(self)  # don't show yet
         self.selected_folder_label = QLabel(self)
         self.error_message = QLabel(self)
 
@@ -77,6 +76,15 @@ class SetupWindow(QWidget):
 
         # Validation
         self.onlyInt = QIntValidator()
+
+        #layouts
+        self.formLayout =QFormLayout()
+
+        #GroupBoxs
+        self.groupBox = QGroupBox()
+
+        #Scrolls
+        self.scroll = QScrollArea(self)
 
         # Init
         self.init_ui()
@@ -117,7 +125,7 @@ class SetupWindow(QWidget):
         self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
         # Next Button
-        self.next_button.move(360, 880)
+        self.next_button.move(360, 630)
         self.next_button.clicked.connect(self.continue_app)
         self.next_button.setObjectName("blueButton")
 
@@ -127,6 +135,9 @@ class SetupWindow(QWidget):
         self.error_message.setStyleSheet('color: red; font-weight: bold')
 
         self.init_radio_buttons()
+
+        #initiate the ScrollArea
+        self.scroll.setGeometry(60, 400, 300, 200)
 
         # apply custom styles
         try:
@@ -223,38 +234,22 @@ class SetupWindow(QWidget):
             # initialize values
             self.label_inputs = []
             self.label_headlines = []  # labels to label input fields
+            margin_top = 400
 
             # show headline for this step
-            margin_top = 400
-            self.headline_label_inputs.setText('4. Fill in the labels and click "Next"')
-            self.headline_label_inputs.setGeometry(60, margin_top, 300, 20)
-            self.headline_label_inputs.setStyleSheet('font-weight: bold')
+            self.groupBox.setTitle('4. Fill in the labels and click "Next"')
+            self.groupBox.setStyleSheet('font-weight: bold')
 
             # diplsay input fields
-            x_shift = 0  # variable that helps to compute x-coordinate of label in UI
             for i in range(self.num_labels):
                 # append widgets to lists
                 self.label_inputs.append(QtWidgets.QLineEdit(self))
                 self.label_headlines.append(QLabel(f'label {i + 1}:', self))
+                self.formLayout.addRow(self.label_headlines[i], self.label_inputs[i])
 
-                # select particular widget
-                label_input = self.label_inputs[i]
-                label = self.label_headlines[i]
-
-                # place widget in GUI (create multiple columns if there is more than 10 button)
-                y_shift = (30 + 10) * (i % 10)
-                if i != 0 and i % 10 == 0:
-                    x_shift += 240
-                    y_shift = 0
-
-                # place input and labels in GUI
-                label_input.setGeometry(60 + 60 + x_shift, y_shift + margin_top + 45, 120, 26)
-                label.setGeometry(60 + x_shift, y_shift + margin_top + 45, 60, 26)
-
-                # show widgets
-                label_input.show()
-                label.show()
-
+            self.groupBox.setLayout(self.formLayout)
+            self.scroll.setWidget(self.groupBox)
+            self.scroll.setWidgetResizable(True)
     def centerOnScreen(self):
         """
         Centers the window on the screen.
