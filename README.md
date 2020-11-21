@@ -29,7 +29,7 @@ label(s) to these images.
     cd PyQt-image-annotation-tool
     pip install -r requirements.txt
     ```
-3. Run the app
+3. Run the app (use ```python3``` for Python 3)
    ```bash
     python main.py
     ```
