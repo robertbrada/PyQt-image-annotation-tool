@@ -1,15 +1,14 @@
 # PyQt Image Annotation Tool
 
-This app is used to label images in a directory.
-Labeled images can be moved/copied into directories, which are named as assigned labels.
-It's a single Python script with GUI.
-
-For example you have folder ./data/images/ with a lot of images and you need to assign some
-label(s) to these images.
+This app is used to label images in a given directory.
+Labeled images can be moved or copied into sub-directories, which are named as assigned labels.
+The app is just a single Python script with GUI.
 
 ![PyQt Image Annotation Tool GUI](https://i.stack.imgur.com/iihhf.png)
 
 ## What can this app do
+For example you have folder ./data/images/ with a lot of images and you need to assign some
+label(s) to these images.
 
 - it can assign multiple labels to one image
 - it allows you to choose number and names of your labels
@@ -18,22 +17,22 @@ label(s) to these images.
 - it can generate .xlsx file with assigned labels.
 - all settings are handled via GUI
 
-## How to use it
+## Installation and usage
 
-1. Download **main.py** file
-2. You can also download **styles.qss** file and save it to the same directory as **main.py** file.
-   This step is not required, but recommended.
-3. install packages mentioned in **Requiremens** section.
-4. Run **main.py** and GUI with instructions should appear.
+1. Clone the project:
+    ```bash
+    git clone https://github.com/robertbrada/PyQt-image-annotation-tool.git
+    ```
 
-## Requirements
-
-Code is tested on Windows 10 and Ubuntu 18.04
-. Code is written in Python 3.7.4 using following external libraries:
-
-- numpy 1.17.4
-- PyQt 5.9.2
-- XlsxWriter 1.2.6
+2. Enter the directory and install the dependencies (you might need to use ```pip3``` instead of ```pip```):
+    ```bash
+    cd PyQt-image-annotation-tool
+    pip install -r requirements.txt
+    ```
+3. Run the app
+   ```bash
+    python main.py
+    ```
 
 ## Keyboard shortcuts
 
@@ -43,4 +42,4 @@ Code is tested on Windows 10 and Ubuntu 18.04
 
 ## Contributing
 
-Pull requests are welcome.
+Pull requests are welcomed.

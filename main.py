@@ -103,7 +103,7 @@ class SetupWindow(QWidget):
 
         self.labels_file_description.move(60, top_margin_num_labels + 30)
         # self.browse_labels_button.setGeometry(60, top_margin_num_labels + 60, 80, 28)
-        self.browse_labels_button.setGeometry(460, top_margin_num_labels + 25, 89, 28)
+        self.browse_labels_button.setGeometry(520, top_margin_num_labels + 25, 89, 28)
 
         self.browse_labels_button.clicked.connect(self.pick_labels_file)
 
@@ -356,7 +356,7 @@ class LabelerWindow(QWidget):
 
         # create 'show next automatically' checkbox
         self.show_next_checkbox.setChecked(False)
-        self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 300, 20)
+        self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 400, 20)
 
         # "create xlsx" checkbox
         self.generate_xlsx_checkbox.setChecked(False)
