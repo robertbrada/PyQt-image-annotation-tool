@@ -36,8 +36,8 @@ label(s) to these images.
 
 ## Keyboard shortcuts
 
-- N: Next image
-- P: Previous image
+- Right Arrow : Next image
+- Left Arrow : Previous image
 - 1-9: Select label
 
 ## Contributing

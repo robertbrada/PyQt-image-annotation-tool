@@ -411,10 +411,10 @@ class LabelerWindow(QWidget):
         next_im_btn.clicked.connect(self.show_next_image)
 
         # Add "Prev Image" and "Next Image" keyboard shortcuts
-        prev_im_kbs = QShortcut(QKeySequence("p"), self)
+        prev_im_kbs = QShortcut(QKeySequence("left"), self)
         prev_im_kbs.activated.connect(self.show_prev_image)
 
-        next_im_kbs = QShortcut(QKeySequence("n"), self)
+        next_im_kbs = QShortcut(QKeySequence("right"), self)
         next_im_kbs.activated.connect(self.show_next_image)
 
         # Add "generate csv file" button
