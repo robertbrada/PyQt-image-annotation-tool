@@ -6,9 +6,9 @@ import sys
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
+from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence, QPainter, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
-    QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
+    QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsPixmapItem, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
 
 
@@ -214,6 +214,8 @@ class SetupWindow(QWidget):
             # fill the input fileds with loaded labels
             for input, label in zip(self.label_inputs, labels):
                 input.setText(label)
+        else:
+            print("Invalid file")
 
     def generate_label_inputs(self):
         """
@@ -297,6 +299,70 @@ class SetupWindow(QWidget):
             self.error_message.setText(message)
 
 
+class ImageBox(QtWidgets.QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.setBackgroundRole(QPalette.Background)
+        #self.setFrameStyle(0)
+        self.setRenderHints(
+            QPainter.Antialiasing | QPainter.SmoothPixmapTransform
+        )
+
+        self._pixmap_item = QGraphicsPixmapItem()
+        self._pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+
+        scene = QGraphicsScene()
+        scene.addItem(self._pixmap_item)
+        self.setScene(scene)
+
+    def load_pixmap(self, pixmap):
+        self.resetZoom()
+        self._pixmap_item.setPixmap(pixmap)
+        return True
+
+    def zoomIn(self, viewAnchor=QtWidgets.QGraphicsView.AnchorUnderMouse):
+        self.zoom(1.1, viewAnchor)
+
+    def zoomOut(self, viewAnchor=QtWidgets.QGraphicsView.AnchorUnderMouse):
+        self.zoom(1/1.1, viewAnchor)
+
+    def zoom(self, f, viewAnchor=QtWidgets.QGraphicsView.AnchorUnderMouse):
+        self.setTransformationAnchor(viewAnchor)
+        self.scale(f, f)
+        self.__setDragEnabled(self.__isEnableDrag())
+        self.setTransformationAnchor(self.AnchorUnderMouse)
+
+    def resetZoom(self):
+        self.resetTransform()
+        self.__setDragEnabled(False)
+
+    def fitToWindow(self):
+        self.fitInView(self.sceneRect(), Qt.KeepAspectRatio)
+
+    def __isEnableDrag(self):
+        v = self.verticalScrollBar().maximum() > 0
+        h = self.horizontalScrollBar().maximum() > 0
+        return v or h
+
+    def __setDragEnabled(self, isEnabled):
+        self.setDragMode(
+            self.ScrollHandDrag if isEnabled else self.NoDrag)
+
+    def wheelEvent(self, event):
+        mods = event.modifiers()
+        delta = event.angleDelta()
+
+        # If user presses ctrl and middle mouse scroll
+        if Qt.ControlModifier == int(mods):
+            if int(delta.y())>0:
+                self.zoomIn()
+            else:
+                self.zoomOut()
+        else:
+            super().wheelEvent(event)
+
+
 class LabelerWindow(QWidget):
     def __init__(self, labels, input_folder, mode):
         super().__init__()
@@ -324,7 +390,7 @@ class LabelerWindow(QWidget):
         self.label_buttons = []
 
         # Initialize Labels
-        self.image_box = QLabel(self)
+        self.image_box = ImageBox(self)
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
         self.curr_image_headline = QLabel('Current image', self)
@@ -378,6 +444,8 @@ class LabelerWindow(QWidget):
         self.set_image(self.img_paths[0])
         self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
         self.image_box.setAlignment(Qt.AlignTop)
+        self.image_box.setFixedSize(self.img_panel_width, self.img_panel_height)
+        self.image_box.setSceneRect(0, 0, self.img_panel_width, self.img_panel_height)
 
         # image name
         self.img_name_label.setText(self.img_paths[self.counter])
@@ -610,7 +678,7 @@ class LabelerWindow(QWidget):
         else:
             pixmap = pixmap.scaledToHeight(self.img_panel_height - margin)
 
-        self.image_box.setPixmap(pixmap)
+        self.image_box.load_pixmap(pixmap)
 
     def generate_csv(self, out_filename):
         """
