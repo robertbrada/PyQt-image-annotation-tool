@@ -250,6 +250,7 @@ class SetupWindow(QWidget):
             self.groupBox.setLayout(self.formLayout)
             self.scroll.setWidget(self.groupBox)
             self.scroll.setWidgetResizable(True)
+
     def centerOnScreen(self):
         """
         Centers the window on the screen.
@@ -315,7 +316,6 @@ class LabelerWindow(QWidget):
         self.input_folder = input_folder
         self.img_paths = get_img_paths(input_folder)
         self.labels = labels
-        self.num_labels = len(self.labels)
         self.num_images = len(self.img_paths)
         self.assigned_labels = {}
         self.mode = mode
@@ -423,28 +423,51 @@ class LabelerWindow(QWidget):
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes': self.generate_csv(filename))
         next_im_btn.setObjectName("blueButton")
 
+        # Add "Add label" button
+        add_label_btn = QtWidgets.QPushButton("Add label", self)
+        add_label_btn.move(self.img_panel_width + 20, 560)
+        add_label_btn.clicked.connect(self.add_label)
+        add_label_btn.setObjectName("blueButton")
+
+        self.newLabelInput = QLineEdit(self)
+        self.newLabelInput.move(self.img_panel_width + 20, 540)
+
         # Create button for each label
-        x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         for i, label in enumerate(self.labels):
-            self.label_buttons.append(QtWidgets.QPushButton(label, self))
-            button = self.label_buttons[i]
+            button = self.init_label_button(i, label)
+            self.label_buttons.append(button)
 
-            # create click event (set label)
-            # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
-            button.clicked.connect(lambda state, x=label: self.set_label(x))
+    def init_label_button(self, i, label):
+        button = QtWidgets.QPushButton(label, self)
 
-            # create keyboard shortcut event (set label)
-            # shortcuts start getting overwritten when number of labels >9
-            label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
-            label_kbs.activated.connect(lambda x=label: self.set_label(x))
+        # create click event (set label)
+        # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
+        button.clicked.connect(lambda state, x=label: self.set_label(x))
 
-            # place button in GUI (create multiple columns if there is more than 10 button)
-            y_shift = (30 + 10) * (i % 10)
-            if (i != 0 and i % 10 == 0):
-                x_shift += 120
-                y_shift = 0
+        # create keyboard shortcut event (set label)
+        # shortcuts start getting overwritten when number of labels >9
+        label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+        label_kbs.activated.connect(lambda x=label: self.set_label(x))
 
-            button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
+        # place button in GUI (create multiple columns if there is more than 10 button)
+        y_shift = (30 + 10) * (i % 10)
+        x_shift = 120 * (i // 10)
+
+        button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
+
+        return button
+
+    def add_label(self):
+        new_label = self.newLabelInput.text().strip()
+        if new_label != '' and new_label not in self.labels:
+            self.newLabelInput.setText('')
+            self.labels.append(new_label)
+            button = self.init_label_button(len(self.labels)-1, new_label)
+            button.show()
+            self.label_buttons.append(button)
+
+            if self.mode == 'copy' or self.mode == 'move':
+                self.create_label_folders([new_label], self.input_folder)
 
     def set_label(self, label):
         """
@@ -538,7 +561,6 @@ class LabelerWindow(QWidget):
             self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
             self.set_button_color(filename)
             self.csv_generated_message.setText('')
-
 
         # change button color if this is last image in dataset
         elif self.counter == self.num_images - 1:
@@ -674,7 +696,7 @@ class LabelerWindow(QWidget):
         label_to_int = dict((c, i) for i, c in enumerate(self.labels))
 
         # initialize array to save selected labels
-        zero_one_arr = np.zeros([self.num_labels], dtype=int)
+        zero_one_arr = np.zeros([len(self.labels)], dtype=int)
         for label in labels:
             zero_one_arr[label_to_int[label]] = 1
 
