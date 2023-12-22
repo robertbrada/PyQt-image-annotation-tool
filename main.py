@@ -23,9 +23,18 @@ def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
 
     for filename in os.listdir(dir):
         if filename.lower().endswith(extensions):
-            img_paths.append(os.path.join(dir, filename))
+            img_paths.append(join_path(dir, filename))
 
     return img_paths
+
+
+def join_path(path, *paths):
+    """
+    Use os.path.abspath to prevent mixed slashes on Windows
+    """
+    path = os.path.join(path, *paths)
+    path = os.path.abspath(path)
+    return path
 
 
 def make_folder(directory):
@@ -445,7 +454,7 @@ class LabelerWindow(QWidget):
         self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
         self.image_box.setAlignment(Qt.AlignTop)
         self.image_box.setFixedSize(self.img_panel_width, self.img_panel_height)
-        self.image_box.setSceneRect(0, 0, self.img_panel_width, self.img_panel_height)
+        self.image_box.setSceneRect(0, 0, self.img_panel_width - 1, self.img_panel_height - 1)
 
         # image name
         self.img_name_label.setText(self.img_paths[self.counter])
@@ -560,25 +569,25 @@ class LabelerWindow(QWidget):
 
                 # remove image from appropriate folder
                 if self.mode == 'copy':
-                    os.remove(os.path.join(self.input_folder, label, img_name))
+                    os.remove(join_path(self.input_folder, label, img_name))
 
                 elif self.mode == 'move':
                     # label was in assigned labels, so I want to remove it from label folder,
                     # but this was the last label, so move the image to input folder.
                     # Don't remove it, because it it not save anywehre else
                     if img_name not in self.assigned_labels.keys():
-                        shutil.move(os.path.join(self.input_folder, label, img_name), self.input_folder)
+                        shutil.move(join_path(self.input_folder, label, img_name), self.input_folder)
                     else:
                         # label was in assigned labels and the image is store in another label folder,
                         # so I want to remove it from current label folder
-                        os.remove(os.path.join(self.input_folder, label, img_name))
+                        os.remove(join_path(self.input_folder, label, img_name))
 
             # label is not there yet. But the image has some labels already
             else:
                 self.assigned_labels[img_name].append(label)
 
                 # path to copy/move images
-                copy_to = os.path.join(self.input_folder, label)
+                copy_to = join_path(self.input_folder, label)
 
                 # copy/move the image into appropriate label folder
                 if self.mode == 'copy':
@@ -588,7 +597,7 @@ class LabelerWindow(QWidget):
                 elif self.mode == 'move':
                     # the image doesn't have to be stored in input_folder anymore.
                     # get the path where the image is stored
-                    copy_from = os.path.join(self.input_folder, self.assigned_labels[img_name][0], img_name)
+                    copy_from = join_path(self.input_folder, self.assigned_labels[img_name][0], img_name)
                     shutil.copy(copy_from, copy_to)
 
         else:
@@ -596,7 +605,7 @@ class LabelerWindow(QWidget):
 
             self.assigned_labels[img_name] = [label]
             # move copy images to appropriate directories
-            copy_to = os.path.join(self.input_folder, label)
+            copy_to = join_path(self.input_folder, label)
 
             if self.mode == 'copy':
                 shutil.copy(img_path, copy_to)
@@ -622,7 +631,7 @@ class LabelerWindow(QWidget):
             # If we have already assigned label to this image and mode is 'move', change the input path.
             # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
             if self.mode == 'move' and filename in self.assigned_labels.keys():
-                path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
+                path = join_path(self.input_folder, self.assigned_labels[filename][0], filename)
 
             self.set_image(path)
             self.img_name_label.setText(path)
@@ -649,7 +658,7 @@ class LabelerWindow(QWidget):
                 # If we have already assigned label to this image and mode is 'move', change the input path.
                 # The reason is that the image was moved from '.../input_folder' to '.../input_folder/label'
                 if self.mode == 'move' and filename in self.assigned_labels.keys():
-                    path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
+                    path = join_path(self.input_folder, self.assigned_labels[filename][0], filename)
 
                 self.set_image(path)
                 self.img_name_label.setText(path)
@@ -686,9 +695,9 @@ class LabelerWindow(QWidget):
         Assigned label is represented as one-hot vector.
         :param out_filename: name of csv file to be generated
         """
-        path_to_save = os.path.join(self.input_folder, 'output')
+        path_to_save = join_path(self.input_folder, 'output')
         make_folder(path_to_save)
-        csv_file_path = os.path.join(path_to_save, out_filename) + '.csv'
+        csv_file_path = join_path(path_to_save, out_filename) + '.csv'
 
         with open(csv_file_path, "w", newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
@@ -773,7 +782,7 @@ class LabelerWindow(QWidget):
     @staticmethod
     def create_label_folders(labels, folder):
         for label in labels:
-            make_folder(os.path.join(folder, label))
+            make_folder(join_path(folder, label))
 
 
 if __name__ == '__main__':
