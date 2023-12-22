@@ -438,6 +438,10 @@ class LabelerWindow(QWidget):
 
         # image name label
         self.img_name_label.setGeometry(20, 40, self.img_panel_width, 20)
+        self.img_name_label.setCursor(Qt.IBeamCursor)
+        self.img_name_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.img_name_label.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.img_name_label.customContextMenuRequested.connect(self.show_img_name_label_menu)
 
         # progress bar (how many images have I labeled so far)
         self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
@@ -752,6 +756,39 @@ class LabelerWindow(QWidget):
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
             else:
                 button.setStyleSheet('background-color: None')
+
+    def show_img_name_label_menu(self, pos):
+        """
+        Display menu when right click on image name label
+        """
+        text = self.img_name_label.selectedText()
+        img_path = self.img_paths[self.counter]
+
+        menu = QtWidgets.QMenu()
+        copy_selected_action = menu.addAction('Copy Selected')
+        copy_dir_path_action = menu.addAction('Copy Dir Path')
+        copy_filename_action = menu.addAction('Copy Filename')
+        copy_fullpath_action = menu.addAction('Copy Fullpath')
+        menu.addSeparator()
+        select_action = menu.addAction('Select All')
+
+        if not text:
+            copy_selected_action.setEnabled(False)
+
+        # show the menu
+        action = menu.exec_(self.img_name_label.mapToGlobal(pos))
+
+        if action == copy_selected_action:
+            # if the menu has been triggered by the action, copy to the clipboard
+            QtWidgets.QApplication.clipboard().setText(text)
+        elif action == copy_dir_path_action:
+            QtWidgets.QApplication.clipboard().setText(os.path.split(img_path)[0])
+        elif action == copy_filename_action:
+            QtWidgets.QApplication.clipboard().setText(os.path.split(img_path)[-1])
+        elif action == copy_fullpath_action:
+            QtWidgets.QApplication.clipboard().setText(img_path)
+        elif action == select_action:
+            self.img_name_label.setSelection(0, len(img_path))
 
     def closeEvent(self, event):
         """
