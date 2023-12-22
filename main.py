@@ -458,7 +458,8 @@ class LabelerWindow(QWidget):
         self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
         self.image_box.setAlignment(Qt.AlignTop)
         self.image_box.setFixedSize(self.img_panel_width, self.img_panel_height)
-        self.image_box.setSceneRect(0, 0, self.img_panel_width - 1, self.img_panel_height - 1)
+        self.image_box.setSceneRect(0, 0, self.img_panel_width - 2*self.image_box.frameWidth(),
+                                    self.img_panel_height - 2*self.image_box.frameWidth())
 
         # image name
         self.img_name_label.setText(self.img_paths[self.counter])
