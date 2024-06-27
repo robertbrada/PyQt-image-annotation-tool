@@ -251,6 +251,7 @@ class SetupWindow(QWidget):
             self.groupBox.setLayout(self.formLayout)
             self.scroll.setWidget(self.groupBox)
             self.scroll.setWidgetResizable(True)
+
     def centerOnScreen(self):
         """
         Centers the window on the screen.
@@ -331,6 +332,7 @@ class LabelerWindow(QWidget):
         self.curr_image_headline = QLabel('Current image', self)
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
+        self.german_format_check_box = QCheckBox("Save as German format", self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
         self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
 
@@ -356,6 +358,7 @@ class LabelerWindow(QWidget):
 
         # "create xlsx" checkbox
         self.generate_xlsx_checkbox.setChecked(False)
+        self.german_format_check_box.setGeometry(self.img_panel_width + 140, 560, 300, 20)
         self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image headline
@@ -390,6 +393,8 @@ class LabelerWindow(QWidget):
         ui_line = QLabel(self)
         ui_line.setGeometry(20, 98, 1012, 1)
         ui_line.setStyleSheet('background-color: black')
+
+        # init checkbox to generate the csv in german format add sep with replacing the delimiter
 
         # apply custom styles
         try:
@@ -475,7 +480,7 @@ class LabelerWindow(QWidget):
                 elif self.mode == 'move':
                     # label was in assigned labels, so I want to remove it from label folder,
                     # but this was the last label, so move the image to input folder.
-                    # Don't remove it, because it it not save anywehre else
+                    # Don't remove it, because it not save anywhere else
                     if img_name not in self.assigned_labels.keys():
                         shutil.move(os.path.join(self.input_folder, label, img_name), self.input_folder)
                     else:
@@ -602,7 +607,12 @@ class LabelerWindow(QWidget):
         csv_file_path = os.path.join(path_to_save, out_filename) + '.csv'
 
         with open(csv_file_path, "w", newline='') as csv_file:
-            writer = csv.writer(csv_file, delimiter=',')
+            if(self.german_format_check_box.isChecked()):
+                delimiter = ';'
+            else:
+                delimiter = ','
+
+            writer = csv.writer(csv_file, delimiter=delimiter)
 
             # write header
             writer.writerow(['img'] + self.labels)
@@ -641,7 +651,7 @@ class LabelerWindow(QWidget):
     def set_button_color(self, filename):
         """
         changes color of button which corresponds to selected label
-        :filename filename of loaded image:
+        :filename of loaded image:
         """
 
         if filename in self.assigned_labels.keys():
