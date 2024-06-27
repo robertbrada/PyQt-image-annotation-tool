@@ -1,0 +1,34 @@
+stages:
+  - test-csv
+  - test-image_extensions
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  key: "$CI_JOB_NAME"
+  paths:
+    - .cache/pip
+
+before_script:
+    - apt-get update
+    - apt-get install -y python3-pyqt5 xvfb
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - python3 -m pip install --upgrade pip
+    - pip3 install -r requirements.txt
+    - pip install pytest pytest-qt
+    - export PYTHONPATH=$PYTHONPATH:$CI_PROJECT_DIR/app
+
+test-csv:
+    stage: test-csv
+    image: python:3.8
+    script:
+        - xvfb-run -a --server-args="-screen 0 1024x768x24" pytest test/test_generate_csv.py --tb=short -v
+
+test-image_extensions:
+  stage: test-image_extensions
+  image: python:3.8
+  script:
+        - xvfb-run -a --server-args="-screen 0 1024x768x24" pytest test/test_img_paths.py --tb=short -v
+
