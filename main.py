@@ -6,13 +6,14 @@ import sys
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
+from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence, QImageReader
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
 
 
-def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
+def get_img_paths(dir, extensions=tuple(['.' + extension.data().decode('utf-8') for
+                                         extension in QImageReader.supportedImageFormats()])):
     '''
     :param dir: folder with files
     :param extensions: tuple with file endings. e.g. ('.jpg', '.png'). Files with these endings will be added to img_paths
@@ -129,7 +130,7 @@ class SetupWindow(QWidget):
         self.next_button.clicked.connect(self.continue_app)
         self.next_button.setObjectName("blueButton")
 
-        # Erro message
+        # Error message
         self.error_message.setGeometry(20, 810, self.width - 20, 20)
         self.error_message.setAlignment(Qt.AlignCenter)
         self.error_message.setStyleSheet('color: red; font-weight: bold')
@@ -211,7 +212,7 @@ class SetupWindow(QWidget):
             self.numLabelsInput.setText(str(len(labels)))
             self.generate_label_inputs()
 
-            # fill the input fileds with loaded labels
+            # fill the input fields with loaded labels
             for input, label in zip(self.label_inputs, labels):
                 input.setText(label)
 
