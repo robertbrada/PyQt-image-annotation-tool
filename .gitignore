@@ -5,6 +5,9 @@ data/
 out/
 paper/
 
+# virtual enviroment
+pyqt-annotation-tool/
+
 *.log
 *.out
 *.aux
